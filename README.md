@@ -1,2 +1,1 @@
-# LASLog
-LazyAlienServer Log Website
+# LASInternalWebsite
