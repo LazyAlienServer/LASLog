@@ -87,6 +87,7 @@ img {
 }
 
 .main-container {
+  margin-top: 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
