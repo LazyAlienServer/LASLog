@@ -2,11 +2,12 @@
     <div class="content">
         <div class="main-container">
             <div class="left-container">
-                <h1>LAS&nbsp;LOG</h1>
-                <h2>管理您在LAS的一切事务</h2>
+                <h1><span>LAS</span><span>LOG</span></h1>
+                <h2>管理您在LAS的<strong>一切事务</strong></h2>
                 <div class="tag-container">
                     <div class="tag" v-for="value in [['交流', '#A263CF'], ['分享', '#9774DA'], ['资料', '#8C84E5'], ['归档', '#8194F0']]" :style="{ backgroundColor: value[1] }">{{ value[0] }}</div>
                 </div>
+                <h2 class="h2-mobile">管理您在LAS的<strong>一切事务</strong></h2>
                 <h3>Lazy Alien Server 的服务器交流平台，集成白名单管理、作品归档、插件管理、信息交流等功能</h3>
             </div>
             <div class="right-container">
@@ -39,6 +40,8 @@ h1 {
     color: #746AEB;
     letter-spacing: 0.25rem;
     margin: 0px 0px -2rem 0px;
+    display: flex;
+    gap: 2rem;
 }
 
 h2 {
@@ -47,6 +50,10 @@ h2 {
     font-weight: 500;
     color: #5C39A1;
     margin: 0px;
+}
+
+.h2-mobile {
+    display: none;
 }
 
 h3 {
@@ -160,6 +167,9 @@ img {
     .right-container {
         display: none;
     }
+    h1 {
+        justify-content: center;
+    }
     h3 {
         padding-right: 0px;
     }
@@ -171,6 +181,63 @@ img {
     }
     .tag-container {
         justify-content: center;
+    }
+    .tag {
+        font-weight: 500;
+    }
+}
+
+@media (max-width: 830px) {
+    html {
+        font-size: 14px;
+    }
+    .content {
+        width: 90%;
+        margin-left: 5%;
+    }
+    
+}
+
+@media (max-width: 650px) {
+    html {
+        font-size: 12px;
+    }
+    
+}
+
+@media (max-width: 570px) {
+    html {
+        font-size: 14px;
+    }
+    h1 {
+        font-size: 10rem;
+        flex-direction: column;
+        margin-bottom: 3rem;
+        span {
+            margin: -4rem 0px;
+        }
+    }
+    h2 {
+        display: none;
+    }
+    .h2-mobile {
+        display: block;
+        font-size: 2.8rem;
+        display: flex;
+        flex-direction: column;
+        strong {
+            font-size: 3rem;
+            margin-top: -10px;
+        }
+    }
+    h3 {
+        display: none;
+    }
+    .tag {
+        padding: 0px 0.7rem 0px 0.9em;
+    }
+    hr {
+        display: none;
     }
 }
 </style>
