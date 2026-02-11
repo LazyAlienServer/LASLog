@@ -7,15 +7,27 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "npx simple-git-hooks && nuxt prepare",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
   },
   "dependencies": {
-    "@nuxt/eslint": "^1.15.1",
     "nuxt": "^4.3.1",
     "vue": "^3.5.28",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.4.3"
+    "@antfu/eslint-config": "^7.4.3",
+    "@nuxt/eslint": "^1.15.1",
+    "eslint": "^10.0.0",
+    "eslint-plugin-format": "^1.4.0",
+    "lint-staged": "^16.2.7",
+    "simple-git-hooks": "^2.13.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
   }
 }

@@ -5,7 +5,7 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
   await antfu({
-    name: 'endifield_imitation/antfu',
+    name: 'laslog/antfu',
     formatters: true,
     vue: true, // To enable accessibility in Vue, use the option {a11y: true}
     typescript: {
@@ -18,7 +18,7 @@ export default withNuxt(
     },
   }),
   {
-    name: 'endifield_imitation/custom',
+    name: 'laslog/custom',
     rules: {
       'nuxt/prefer-import-meta': 'error',
     },
