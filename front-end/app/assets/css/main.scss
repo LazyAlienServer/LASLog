@@ -4,6 +4,7 @@
   --color-primary: #746aeb;
   --gap: 1rem;
   --base-font-size: 18px;
+  --bg-color: #f8f8f8;
 }
 
 html,
@@ -22,7 +23,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8f8f8;
 }
 
 @media (min-width: 2160px) {
