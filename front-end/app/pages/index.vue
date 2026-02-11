@@ -40,7 +40,7 @@ h1 {
   font-weight: 1000;
   color: #746aeb;
   letter-spacing: 0.25rem;
-  margin: 0px 0px 2rem 0px;
+  margin: 2rem 0px 2rem 0px;
   display: flex;
   gap: 2rem;
   span {
