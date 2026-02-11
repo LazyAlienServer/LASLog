@@ -188,8 +188,9 @@ img {
 
 @media (max-width: 480px) {
   h1 {
-    font-size: 10rem;
+    font-size: 8rem;
     flex-direction: column;
+    margin-top: -1rem;
     margin-bottom: 3rem;
   }
   .h2-desktop {
@@ -213,6 +214,9 @@ img {
   }
   hr {
     display: none;
+  }
+  .button-container {
+    margin-top: 3vh;
   }
 }
 </style>
