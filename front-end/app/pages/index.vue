@@ -28,7 +28,9 @@ definePageMeta({
     </div>
     <div class="button-container">
       <hr>
-      <a href="/user">探索 LAS LOG</a>
+      <NuxtLink id="explore_LASLOG" to="/login">
+        探索 LAS LOG
+      </NuxtLink>
       <hr>
     </div>
   </div>
@@ -129,7 +131,7 @@ img {
     background-color: #746aeb;
     flex-shrink: 0;
   }
-  a {
+  #explore_LASLOG {
     color: #746aeb;
     font-size: 1.4rem;
     font-weight: 400;
@@ -141,7 +143,7 @@ img {
     border-radius: 0.7rem;
     transition: all 0.2s ease-in-out;
   }
-  a:hover {
+  #explore_LASLOG:hover {
     background-color: rgba($color: #746aeb, $alpha: 0.1);
   }
 }
