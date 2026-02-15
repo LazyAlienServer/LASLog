@@ -8,8 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint": "biome check && biome lint ",
+    "lint:fix": "biome format --write && biome lint --write"
   },
   "dependencies": {
     "@nuxt/image": "2.0.0",
@@ -21,9 +21,6 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^7.4.3",
-    "@nuxt/eslint": "^1.15.1",
-    "eslint": "^10.0.0",
-    "eslint-plugin-format": "^1.4.0"
+    "@biomejs/biome": "^2.3.15"
   }
 }
