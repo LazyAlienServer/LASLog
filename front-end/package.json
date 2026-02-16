@@ -28,5 +28,6 @@
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"
-  }
+  },
+  "packageManager": "yarn@4.12.0"
 }
