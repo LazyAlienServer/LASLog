@@ -106,7 +106,8 @@ $gradient-blue-purple-soft: linear-gradient(to right, #8295ff, #c97cfc);
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 1px;
+  height: 2px;
+  transform: scaleY(0.5);
   background-image: $gradient-blue-purple-soft;
 }
 
