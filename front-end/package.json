@@ -2,6 +2,7 @@
   "name": "front-end",
   "type": "module",
   "private": true,
+  "packageManager": "yarn@4.12.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -29,6 +30,5 @@
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"
-  },
-  "packageManager": "yarn@4.12.0"
+  }
 }
