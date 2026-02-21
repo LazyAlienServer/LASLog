@@ -8,7 +8,7 @@ const props = defineProps<{
 
 <template>
   <div class="tag">
-    <span class="state" :style="{color:stateColor}">{{ props.state }}</span>
+    <span class="state" :style="{ color: stateColor }">{{ props.state }}</span>
     <span class="name">{{ props.tag }}</span>
   </div>
 </template>
