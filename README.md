@@ -1,0 +1,2 @@
+# LASLog
+LazyAlienServer Log Website
