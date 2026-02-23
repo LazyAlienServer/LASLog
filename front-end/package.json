@@ -4,13 +4,21 @@
   "private": true,
   "packageManager": "yarn@4.12.0",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "build": "yarn nuxt build",
+    "dev": "yarn nuxt dev",
+    "generate": "yarn nuxt generate",
+    "preview": "yarn nuxt preview",
+    "postinstall": "yarn nuxt prepare",
+    "test:pact": "yarn vitest run tests/pact",
+    "test": "yarn vitest run",
+    "sonar": "sonar-scanner",
+    "lint": "yarn run lint:js && yarn run lint:style && yarn run type-check",
+    "lint:fix": "yarn run lint:js:fix && yarn run lint:style:fix",
+    "lint:js": "eslint .",
+    "lint:js:fix": "eslint . --fix",
+    "lint:style": "stylelint \"**/*.{css,scss,vue}\"",
+    "lint:style:fix": "stylelint \"**/*.{css,scss,vue}\" --fix",
+    "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@nuxt/image": "2.0.0",
@@ -24,9 +32,21 @@
   "devDependencies": {
     "@antfu/eslint-config": "^7.4.3",
     "@nuxt/eslint": "^1.15.1",
+    "@pact-foundation/pact": "^16.2.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "eslint": "^10.0.0",
     "eslint-plugin-format": "^1.4.0",
-    "typescript": "^5.9.3"
+    "happy-dom": "^20.7.0",
+    "postcss-html": "^1.8.1",
+    "sonarqube-scanner": "^4.3.4",
+    "stylelint": "^17.3.0",
+    "stylelint-config-recess-order": "^7.6.1",
+    "stylelint-config-standard-vue": "^1.0.0",
+    "stylelint-order": "^7.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "vue-tsc": "^3.2.5"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@latest"

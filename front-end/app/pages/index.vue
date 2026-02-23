@@ -100,7 +100,7 @@ img {
 .tag-container {
   display: flex;
   flex-wrap: wrap;
-  flex-flow: row;
+  flex-direction: row;
   gap: 1rem;
   margin: 1rem 0px 2rem;
 }
@@ -200,9 +200,8 @@ img {
     display: none;
   }
   .h2-mobile {
-    display: block;
     font-size: 2.8rem;
-    display: flex;
+    display: flex; // Removed duplicate 'display: block'
     flex-direction: column;
     strong {
       font-size: 3rem;
