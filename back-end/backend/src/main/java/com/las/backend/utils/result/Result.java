@@ -3,8 +3,6 @@ package com.las.backend.utils.result;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.io.Serializable;
-
 /**
  * @author sunyinuo
  */

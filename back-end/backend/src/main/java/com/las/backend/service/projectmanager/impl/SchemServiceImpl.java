@@ -5,6 +5,7 @@ import com.las.backend.model.projectmanager.DataMsg;
 import com.las.backend.model.projectmanager.MaterialReq;
 import com.las.backend.service.projectmanager.SchemService;
 
+import com.las.backend.service.projectmanager.WsServerService;
 import com.las.backend.utils.result.Result;
 import com.las.backend.utils.result.ResultEnum;
 import com.las.backend.utils.result.ResultUtil;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class SchemServiceImpl implements SchemService {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final WsServerServiceImpl wsServerService;
+    private final WsServerService wsServerService;
 
     @Override
     public Result getProgress(String filename) {

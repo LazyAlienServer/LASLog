@@ -1,4 +1,4 @@
-package com.las.backend.controller.projectManager;
+package com.las.backend.controller.projectmanager;
 
 import com.las.backend.model.projectmanager.MaterialReq;
 import com.las.backend.service.projectmanager.SchemService;
