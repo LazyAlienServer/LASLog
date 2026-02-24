@@ -125,3 +125,4 @@ fabric.properties
 /front-end/.yarn/
 /.idea/
 /LASLog.iml
+/front-end/pacts/
