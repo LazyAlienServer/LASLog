@@ -4,6 +4,9 @@ package com.las.backend.utils.result;
  * @author sunyinuo
  */
 public class ResultUtil {
+    private ResultUtil(){
+        //INOP
+    }
     /**
      * HaveData
      * @param code 包装类

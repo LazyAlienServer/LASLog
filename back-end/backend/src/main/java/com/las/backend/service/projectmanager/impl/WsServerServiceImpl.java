@@ -1,13 +1,14 @@
-package com.las.backend.service.projectManager.impl;
+package com.las.backend.service.projectmanager.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.las.backend.model.projectManager.WsProtocol;
-import com.las.backend.service.projectManager.WsServerService;
+import com.las.backend.model.projectmanager.WsProtocol;
+import com.las.backend.service.projectmanager.WsServerService;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +24,7 @@ public class WsServerServiceImpl implements WsServerService{
     private WebSocketSession session;
 
     @Override
-    public CompletableFuture<String> sendAndAwait(String action, String data) throws Exception {
+    public CompletableFuture<String> sendAndAwait(String action, String data) throws IOException {
         String requestId = UUID.randomUUID().toString();
         CompletableFuture<String> future = new CompletableFuture<>();
         pendingRequests.put(requestId, future);

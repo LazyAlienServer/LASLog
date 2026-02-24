@@ -2,8 +2,8 @@ package com.las.backend.websocket;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.las.backend.model.projectManager.WsProtocol;
-import com.las.backend.service.projectManager.impl.WsServerServiceImpl;
+import com.las.backend.model.projectmanager.WsProtocol;
+import com.las.backend.service.projectmanager.impl.WsServerServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

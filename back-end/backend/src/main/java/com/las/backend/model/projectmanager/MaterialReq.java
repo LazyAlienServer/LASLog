@@ -1,4 +1,4 @@
-package com.las.backend.model.projectManager;
+package com.las.backend.model.projectmanager;
 
 import lombok.Data;
 

@@ -1,6 +1,6 @@
-package com.las.backend.service.projectManager;
+package com.las.backend.service.projectmanager;
 
-import com.las.backend.model.projectManager.MaterialReq;
+import com.las.backend.model.projectmanager.MaterialReq;
 import com.las.backend.utils.result.Result;
 
 public interface SchemService {

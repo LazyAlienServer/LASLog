@@ -1,4 +1,4 @@
-package com.las.backend.model.projectManager;
+package com.las.backend.model.projectmanager;
 
 public class WsProtocol {
     public String id;      // 消息唯一ID (UUID)

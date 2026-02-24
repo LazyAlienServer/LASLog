@@ -1,9 +1,9 @@
-package com.las.backend.service.projectManager.impl;
+package com.las.backend.service.projectmanager.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.las.backend.model.projectManager.DataMsg;
-import com.las.backend.model.projectManager.MaterialReq;
-import com.las.backend.service.projectManager.SchemService;
+import com.las.backend.model.projectmanager.DataMsg;
+import com.las.backend.model.projectmanager.MaterialReq;
+import com.las.backend.service.projectmanager.SchemService;
 
 import com.las.backend.utils.result.Result;
 import com.las.backend.utils.result.ResultEnum;
@@ -21,8 +21,7 @@ public class SchemServiceImpl implements SchemService {
     @Override
     public Result getProgress(String filename) {
         try {
-            DataMsg msg = new DataMsg();
-            msg.filename = filename;
+            DataMsg msg = new DataMsg(filename);
             String sendJson = mapper.writeValueAsString(msg);
 
             String resultStr = wsServerService.sendAndAwait("GET_PROGRESS_TASK", sendJson).get();
@@ -37,11 +36,7 @@ public class SchemServiceImpl implements SchemService {
     @Override
     public Result getMissingMaterial(MaterialReq req) {
         try {
-            DataMsg msg = new DataMsg();
-            msg.filename = req.getFilename();
-            msg.mx1 = req.getMx1(); msg.my1 = req.getMy1(); msg.mz1 = req.getMz1();
-            msg.mx2 = req.getMx2(); msg.my2 = req.getMy2(); msg.mz2 = req.getMz2();
-            msg.includeBuilt = req.isIncludeBuilt();
+            DataMsg msg = new DataMsg(req.getFilename(), req.getMx1(), req.getMy1(), req.getMz1(), req.getMx2(), req.getMy2(), req.getMz2(), req.isIncludeBuilt());
             String sendJson = mapper.writeValueAsString(msg);
 
             String resultStr = wsServerService.sendAndAwait("GET_MATERIAL_TASK", sendJson).get();

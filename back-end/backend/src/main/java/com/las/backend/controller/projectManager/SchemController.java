@@ -1,7 +1,7 @@
 package com.las.backend.controller.projectManager;
 
-import com.las.backend.model.projectManager.MaterialReq;
-import com.las.backend.service.projectManager.SchemService;
+import com.las.backend.model.projectmanager.MaterialReq;
+import com.las.backend.service.projectmanager.SchemService;
 import com.las.backend.utils.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
