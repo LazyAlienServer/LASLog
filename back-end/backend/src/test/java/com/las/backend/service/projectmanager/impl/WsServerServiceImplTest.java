@@ -25,8 +25,6 @@ class WsServerServiceImplTest {
     @BeforeEach
     void setUp() {
         wsServerService = new WsServerServiceImpl();
-        // 如果你后来的代码里加了 isOpen 的判断，这里放开注释；如果没有加判断，可以删掉这行。
-        // Mockito.lenient().when(session.isOpen()).thenReturn(true);
         wsServerService.setSession(session);
     }
 

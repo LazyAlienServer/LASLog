@@ -10,10 +10,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.verify;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,9 +82,13 @@ class SchemWebSocketHandlerTest {
     }
 
     @Test
-    void afterConnectionClosed() throws Exception {
+    void afterConnectionClosed() {
         when(session.getId()).thenReturn("test-session-123");
-        // 模拟断开连接（主要为了走到那一行的代码，提高覆盖率）
-        handler.afterConnectionClosed(session, CloseStatus.NORMAL);
+
+        // 方法 1：断言这个方法执行过程中不会抛出任何异常
+        assertDoesNotThrow(() -> handler.afterConnectionClosed(session, CloseStatus.NORMAL));
+
+        // 方法 2：验证确实调用了 session 的 getId() 方法来打印日志
+        verify(session).getId();
     }
 }
