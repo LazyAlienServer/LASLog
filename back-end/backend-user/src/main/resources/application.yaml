@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: backend-user
+springdoc:
+  swagger-ui:
+    # swagger-ui.html 位置
+    path: /api-docs.html
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+server:
+  port: 8081
