@@ -10,7 +10,7 @@ import java.io.Serializable;
  */
 @Data
 @AllArgsConstructor
-public class Result implements Serializable {
+public class Result {
     private Integer code;
     private String msg;
     private Object data;
