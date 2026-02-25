@@ -14,12 +14,12 @@ public class SchemController {
 
     private final SchemService schemService;
 
-    @GetMapping("getProgress")
+    @GetMapping("/getProgress")
     public Result getProgress(@RequestParam String filename) {
         return schemService.getProgress(filename);
     }
 
-    @PostMapping("getMissingMaterial")
+    @PostMapping("/getMissingMaterial")
     public Result getMissingMaterial(@RequestBody MaterialReq req) {
 
         return schemService.getMissingMaterial(req);

@@ -4,9 +4,6 @@ package com.las.backend.utils.result;
  * @author sunyinuo
  */
 public class ResultUtil {
-    private ResultUtil(){
-        //INOP
-    }
     /**
      * HaveData
      * @param code 包装类
@@ -29,5 +26,9 @@ public class ResultUtil {
      */
     public static Result result(Integer code,String msg){
         return result(code,null,msg);
+    }
+
+    private ResultUtil(){
+        //INOP
     }
 }

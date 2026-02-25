@@ -1,8 +1,11 @@
 package com.las.backend.utils.result;
 
+import lombok.Getter;
+
 /**
  * @author sunyinuo
  */
+@Getter
 public enum ResultEnum {
     //常见code
     SUCCESS(200),
@@ -14,10 +17,6 @@ public enum ResultEnum {
 
     ResultEnum(Integer code) {
         this.code = code;
-    }
-
-    public Integer getCode() {
-        return code;
     }
 
 }

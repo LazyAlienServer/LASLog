@@ -1,10 +1,20 @@
 package com.las.backend.model.projectmanager;
 
+import lombok.Data;
+
+@Data
 public class DataMsg {
-    public final String filename;
-    public final int mx1, my1, mz1;
-    public final int mx2, my2, mz2;
-    public final boolean includeBuilt;
+    /**投影文件名**/
+    private String filename;
+    /**角点1**/
+    private int mx1;
+    private int my1;
+    private int mz1;
+    /**角点2**/
+    private int mx2;
+    private int my2;
+    private int mz2;
+    private boolean includeBuilt;
 
 
     public DataMsg(String filename, int mx1, int my1, int mz1, int mx2, int my2, int mz2, boolean includeBuilt) {

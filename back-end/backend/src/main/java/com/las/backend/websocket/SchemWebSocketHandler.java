@@ -32,8 +32,8 @@ public class SchemWebSocketHandler extends TextWebSocketHandler {
 
         WsProtocol response = objectMapper.readValue(payload, WsProtocol.class);
 
-        if ("RESULT".equals(response.action) || "MATERIAL_RESULT".equals(response.action)) {
-            wsServerService.onResultReceived(response.id, response.data);
+        if ("RESULT".equals(response.getAction()) || "MATERIAL_RESULT".equals(response.getAction())) {
+            wsServerService.onResultReceived(response.getId(), response.getData());
         }
     }
 
