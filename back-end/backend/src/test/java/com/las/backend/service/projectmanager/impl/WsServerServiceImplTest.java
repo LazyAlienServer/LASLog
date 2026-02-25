@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +28,28 @@ class WsServerServiceImplTest {
     void setUp() {
         wsServerService = new WsServerServiceImpl();
         wsServerService.setSession(session);
+    }
+
+    @Test
+    void onResultReceived_WithValidId_CompletesFuture() {
+        // 1. 手动创建一个 Future
+        CompletableFuture<String> future = new CompletableFuture<>();
+
+        // 2. 利用反射，获取类里面那个私有的 pendingRequests Map
+        @SuppressWarnings("unchecked")
+        Map<String, CompletableFuture<String>> pendingRequests =
+                (Map<String, CompletableFuture<String>>) ReflectionTestUtils.getField(wsServerService, "pendingRequests");
+
+        // 3. 把我们创建的 Future 和一个已知的 ID 塞进去
+        assertNotNull(pendingRequests);
+        pendingRequests.put("valid-id-123", future);
+
+        // 4. 调用目标方法
+        wsServerService.onResultReceived("valid-id-123", "success-result");
+
+        // 5. 验证这个 Future 是否成功走进了 if 分支并被 complete
+        assertTrue(future.isDone(), "Future 应该被标记为完成状态");
+        assertEquals("success-result", future.join(), "Future 的结果应该匹配传入的值");
     }
 
     @Test

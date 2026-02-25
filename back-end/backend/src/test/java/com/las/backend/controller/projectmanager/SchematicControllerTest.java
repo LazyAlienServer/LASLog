@@ -25,6 +25,21 @@ class SchematicControllerTest {
     private SchemController schematicController;
 
     @SneakyThrows
+
+    @Test
+    void getSchemFiles_Success() {
+        // 1. 模拟 Service 层的返回结果
+        Result mockResult = new Result(200, "获取投影文件信息成功", null);
+        when(schemService.getSchemFiles()).thenReturn(mockResult);
+
+        // 2. 调用控制器方法
+        Result response = schematicController.getSchemFiles();
+
+        // 3. 断言验证
+        assertEquals(200, response.getCode());
+        assertEquals("获取投影文件信息成功", response.getMsg());
+    }
+
     @Test
     void getProgress() {
         Result mockResult = new Result(200, "成功", null);

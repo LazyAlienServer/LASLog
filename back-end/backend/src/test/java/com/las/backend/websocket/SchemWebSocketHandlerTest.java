@@ -70,6 +70,19 @@ class SchemWebSocketHandlerTest {
     }
 
     @Test
+    void handleTextMessage_SchemFilesInfo() throws Exception {
+        // 模拟收到 SCHEMAITC_FILES_INFO 类型的消息
+        String mockPayload = "{\"id\":\"uuid-999\", \"action\":\"SCHEMAITC_FILES_INFO\", \"data\":\"[{\\\"name\\\":\\\"Test\\\"}]\"}";
+        TextMessage message = new TextMessage(mockPayload);
+
+        // 调用目标方法
+        handler.handleTextMessage(session, message);
+
+        // 验证确实成功走进了 if 分支，并提取了正确的 id 和 data 传给 service
+        verify(wsServerService).onResultReceived("uuid-999", "[{\"name\":\"Test\"}]");
+    }
+
+    @Test
     void handleTextMessage_OtherAction() throws Exception {
         // 模拟收到无关的消息，测试 if 分支进不去的情况
         String mockPayload = "{\"id\":\"uuid-789\", \"action\":\"UNKNOWN\", \"data\":\"\"}";

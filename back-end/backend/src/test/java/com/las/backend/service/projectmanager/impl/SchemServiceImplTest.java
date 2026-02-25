@@ -74,7 +74,7 @@ class SchemServiceImplTest {
     }
 
 
-    //获取投影文件列表的测试
+    // 测试 4: 获取投影文件列表的测试
     @Test
     void getSchemFiles_Success() throws Exception {
         // 1. 模拟 Mod 返回的有效 JSON 字符串（比如一个包含投影信息的数组）
@@ -112,11 +112,11 @@ class SchemServiceImplTest {
     void getSchemFiles_InterruptedException() throws Exception {
         // 1. 特殊场景：我们需要模拟 .get() 方法被意外打断，抛出 InterruptedException
         // 这里我们需要显式 mock 一个 CompletableFuture 对象
-        CompletableFuture<String> mockFuture = Mockito.mock(CompletableFuture.class);
+        CompletableFuture mockFuture = Mockito.mock(CompletableFuture.class);
         Mockito.when(mockFuture.get()).thenThrow(new InterruptedException("模拟的线程打断异常"));
 
         Mockito.lenient().when(wsServerService.sendAndAwait(Mockito.eq("GET_SCHEM_FILES"), Mockito.isNull()))
-                .thenReturn(mockFuture);
+                .thenReturn(  mockFuture);
 
         // 2. 调用被测方法
         Result result = schemService.getSchemFiles();
@@ -128,6 +128,31 @@ class SchemServiceImplTest {
         org.junit.jupiter.api.Assertions.assertTrue(Thread.currentThread().isInterrupted(), "线程应该被重新标记为中断状态");
 
         // 测试完毕后，清除当前线程的中断标记，防止影响后续的其他测试运行
+        Thread.interrupted();
+    }
+
+    @Test
+    void getMissingMaterial_InterruptedException() throws Exception {
+        // 1. 准备请求参数
+        MaterialReq req = new MaterialReq();
+        req.setFilename("TestBuilding");
+        req.setMx1(0); req.setMy1(0); req.setMz1(0);
+        req.setMx2(10); req.setMy2(10); req.setMz2(10);
+        req.setIncludeBuilt(true);
+
+        CompletableFuture mockFuture = Mockito.mock(CompletableFuture.class);
+        Mockito.when(mockFuture.get()).thenThrow(new InterruptedException("模拟的材料查询线程打断异常"));
+
+        Mockito.lenient().when(wsServerService.sendAndAwait(Mockito.eq("GET_MATERIAL_TASK"), Mockito.anyString()))
+                .thenReturn(mockFuture);
+
+        Result result = schemService.getMissingMaterial(req);
+
+        assertEquals(403, result.getCode());
+        org.junit.jupiter.api.Assertions.assertTrue(result.getMsg().contains("获取缺失材料失败"));
+
+        org.junit.jupiter.api.Assertions.assertTrue(Thread.currentThread().isInterrupted(), "线程没有被正确标记为中断状态！");
+
         Thread.interrupted();
     }
 }
