@@ -32,13 +32,15 @@ public class SchemWebSocketHandler extends TextWebSocketHandler {
 
         WsProtocol response = objectMapper.readValue(payload, WsProtocol.class);
 
-        if ("RESULT".equals(response.getAction()) || "MATERIAL_RESULT".equals(response.getAction())) {
+        if (       "RESULT".equals(response.getAction())
+                || "MATERIAL_RESULT".equals(response.getAction())
+                || "SCHEMAITC_FILES_INFO".equals(response.getAction())) {
             wsServerService.onResultReceived(response.getId(), response.getData());
         }
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) throws Exception {
+    public void afterConnectionClosed(WebSocketSession session, org.springframework.web.socket.CloseStatus status) {
         log.warn("WebSocket 连接已断开，Session ID: {}, 状态: {}", session.getId(), status);
     }
 }
