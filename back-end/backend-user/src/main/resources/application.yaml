@@ -1,6 +1,34 @@
 spring:
   application:
     name: backend-user
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:lasteamcity.ddns.net}:${DB_PORT:5432}/${DB_NAME:postgres}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:Gp9#q2Wz!mR6*xK4}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 151
+      minimum-idle: 5
+  jpa:
+    hibernate:
+      # 开发环境可以用 update，生产环境强烈建议用 validate 并配合 Flyway/Liquibase
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:lasteamcity.ddns.net}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:las} # 如果没有密码留空
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
 springdoc:
   swagger-ui:
     # swagger-ui.html 位置
