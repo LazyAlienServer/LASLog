@@ -33,7 +33,7 @@ public class SchemController {
         return schemService.getProgress(filename);
     }
 
-    @GetMapping("/getMissingMaterial")
+    @PostMapping("/getMissingMaterial")
     @Operation(summary = "获取缺失材料", description = "获取缺失材料,包含材料区域")
     public Result getMissingMaterial(@RequestBody MaterialReq req) {return schemService.getMissingMaterial(req);}
 }
