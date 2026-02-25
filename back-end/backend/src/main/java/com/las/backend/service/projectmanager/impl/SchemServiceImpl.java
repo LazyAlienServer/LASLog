@@ -12,12 +12,27 @@ import com.las.backend.utils.result.ResultUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 @Service
 @RequiredArgsConstructor
 public class SchemServiceImpl implements SchemService {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final WsServerService wsServerService;
+
+    @Override
+    public Result getSchemFiles() {
+        try{
+            String resultStr = wsServerService.sendAndAwait("GET_SCHEM_FILES", null).get();
+            Object data = mapper.readValue(resultStr,Object.class);
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), data, "获取投影文件信息成功");
+        }catch (IOException | InterruptedException | ExecutionException | RuntimeException e){
+            Thread.currentThread().interrupt();
+            return ResultUtil.result(ResultEnum.SERVER_ERROR.getCode(), "获取投影文件信息失败" + e.getMessage());
+        }
+    }
 
     @Override
     public Result getProgress(String filename) {
@@ -29,7 +44,8 @@ public class SchemServiceImpl implements SchemService {
             Object data = mapper.readValue(resultStr, Object.class);
 
             return ResultUtil.result(ResultEnum.SUCCESS.getCode(), data, "获取进度成功");
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException | ExecutionException | RuntimeException e) {
+            Thread.currentThread().interrupt();
             return ResultUtil.result(ResultEnum.SERVER_ERROR.getCode(), "获取进度失败: " + e.getMessage());
         }
     }
@@ -44,7 +60,8 @@ public class SchemServiceImpl implements SchemService {
             Object data = mapper.readValue(resultStr, Object.class);
 
             return ResultUtil.result(ResultEnum.SUCCESS.getCode(), data, "获取缺失材料成功");
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException | ExecutionException | RuntimeException e) {
+            Thread.currentThread().interrupt();
             return ResultUtil.result(ResultEnum.SERVER_ERROR.getCode(), "获取缺失材料失败: " + e.getMessage());
         }
     }

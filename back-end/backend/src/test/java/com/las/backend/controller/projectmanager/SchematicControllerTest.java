@@ -3,6 +3,7 @@ package com.las.backend.controller.projectmanager;
 import com.las.backend.model.projectmanager.MaterialReq;
 import com.las.backend.service.projectmanager.SchemService;
 import com.las.backend.utils.result.Result;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +24,7 @@ class SchematicControllerTest {
     @InjectMocks
     private SchemController schematicController;
 
+    @SneakyThrows
     @Test
     void getProgress() {
         Result mockResult = new Result(200, "成功", null);
