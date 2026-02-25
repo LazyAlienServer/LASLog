@@ -28,7 +28,7 @@ public class SchemController {
 
     @GetMapping("/getProgress")
     @Operation(summary = "获取进度", description = "获取全部方块数量与完成的方块数量以计算进度")
-    @Parameter(name = "id", description = "用户的唯一标识", required = true)
+    @Parameter(name = "filename", description = "投影文件名", required = true)
     public Result getProgress(@RequestParam String filename) {
         return schemService.getProgress(filename);
     }
