@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "remote.ws.url",
+      "type": "java.lang.String",
+      "description": "Description for remote.ws.url."
+    },
+    {
+      "name": "remote.ws.token",
+      "type": "java.lang.String",
+      "description": "Description for remote.ws.token."
+    }
+  ] }

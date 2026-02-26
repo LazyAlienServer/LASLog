@@ -36,5 +36,9 @@ springdoc:
     operations-sorter: alpha
   api-docs:
     path: /v3/api-docs
+remote:
+  ws:
+    url: ws://103.40.14.23:57211
+    token: '@LazyAlienServer'
 server:
   port: 8081

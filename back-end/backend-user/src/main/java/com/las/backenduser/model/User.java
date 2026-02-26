@@ -2,6 +2,7 @@ package com.las.backenduser.model;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.las.backenduser.handler.ListArrayTypeHandler;
+import jakarta.persistence.Column;
 import lombok.Data;
 
 import java.util.List;
@@ -27,6 +28,12 @@ public class User {
      */
     @TableField(value = "uuid_minecraft", typeHandler = ListArrayTypeHandler.class)
     private List<String> uuidMinecraft;
+
+    /**
+     * minecraft id 列表
+     */
+    @TableField(value = "id_minecraft", typeHandler = ListArrayTypeHandler.class)
+    private List<String> idMinecraft;
 
     /**用户名**/
     private String username;
@@ -54,4 +61,12 @@ public class User {
      * 激活状态：0-待激活,1-已激活,2-封禁/禁用
      */
     private Integer status;
+
+    /**主MC账号**/
+    @Column(name = "main_minecraft_uuid")
+    private String mainMinecraftUuid;
+
+    /**salt**/
+    private String salt;
+
 }

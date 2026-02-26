@@ -31,6 +31,8 @@ class UserMapperTest {
         user.setStatus(1);
         user.setRegisterdate(23434243L);
         user.setQq(2192519304L);
+        user.setMainMinecraftUuid("mc-uuid-1");
+        user.setSalt("4757586868");
 
 
         // 测试 PostgreSQL 数组类型 (text[])
@@ -42,6 +44,9 @@ class UserMapperTest {
 
         List<String> whitelists = Arrays.asList("server-1", "server-2");
         user.setWhitelist(whitelists);
+
+        List<String> idMinecraft = Arrays.asList("mcID1", "mcID2");
+        user.setIdMinecraft(idMinecraft);
 
         // 2. 执行插入
         int rows = userMapper.insert(user);
@@ -57,6 +62,7 @@ class UserMapperTest {
         assertThat(foundUser.getUuidMinecraft()).containsExactly("mc-uuid-1", "mc-uuid-2");
         assertThat(foundUser.getWhitelist()).hasSize(2);
         assertThat(foundUser.getPermission()).hasSize(2);
+        assertThat(foundUser.getIdMinecraft()).hasSize(2);
 
         System.out.println("查询到的用户信息: " + foundUser);
     }
