@@ -212,6 +212,33 @@ class RegisterServiceImplTest {
     }
 
     @Test
+    void completeRegister_PasswordNull() { // 顺便帮你补上了方法名拼写漏掉的 'p'
+        RegisterCompleteDTO dto = new RegisterCompleteDTO();
+        dto.setMinecraftId("a");
+        dto.setUsername("1");
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
+        assertEquals("注册信息不完整", ex.getMessage());
+    }
+
+    @Test
+    void testCheckMinecraftId_WhenResponseMissingId_ReturnsNull() throws IOException {
+        String username = "SomeWeirdUser";
+        String expectedUrl = "https://api.mojang.com/users/profiles/minecraft/" + username;
+
+        // 捏造一个不包含 "id" 的 Map（比如 API 格式变了，或者返回了其他提示）
+        Map<String, Object> mockResponse = new HashMap<>();
+        mockResponse.put("errorMessage", "Something went wrong");
+
+        when(restTemplate.getForObject(expectedUrl, Map.class));
+
+        String result = registerService.checkMinecraftId(username);
+
+        assertNull(result);
+    }
+
+    @Test
     void completeRegister_Success() throws IOException {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
         long future = System.currentTimeMillis() + 100000;
@@ -243,5 +270,37 @@ class RegisterServiceImplTest {
 
         // 验证 Redis 写入
         verify(valueOperations, times(1)).set(anyString(), eq("1"), anyLong(), eq(TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    void completeRegister_RemainingMsZero_ShouldNotSetRedis() throws Exception {
+        // 1. 使用 spy() 包装真实的 service，这样我们可以拦截它内部的方法调用
+        RegisterServiceImpl spyService = spy(registerService);
+
+        RegisterCompleteDTO dto = new RegisterCompleteDTO();
+        dto.setToken("dummy.token"); // 随便传，因为解析步骤会被我们拦截掉
+        dto.setMinecraftId("Notch");
+        dto.setUsername("NotchUsername");
+        dto.setPassword("pwd123");
+
+        Map<String, Object> fakeUserInfo = new HashMap<>();
+        fakeUserInfo.put("qq", "123");
+        fakeUserInfo.put("signature", "dummy_signature");
+        // 故意比当前时间少 1000 毫秒
+        fakeUserInfo.put("expireMs", System.currentTimeMillis() - 1000);
+
+        doReturn(fakeUserInfo).when(spyService).verifyAndDecodeToken(anyString());
+
+        // 3. Mock 必要的外部依赖
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        Map<String, String> mockResponse = new HashMap<>();
+        mockResponse.put("id", "real-uuid-123");
+        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(mockResponse);
+
+        // 4. 执行核心方法（注意：这里一定要用 spyService 去调用！）
+        spyService.completeRegister(dto);
+
+        // 5. 断言：验证由于 remainingMs 为负数，Redis 的 opsForValue() 绝对没有被调用
+        verify(stringRedisTemplate, never()).opsForValue();
     }
 }

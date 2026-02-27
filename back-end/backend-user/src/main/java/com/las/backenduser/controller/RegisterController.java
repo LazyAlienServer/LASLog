@@ -20,7 +20,6 @@ import java.util.HashMap;
 @Slf4j
 public class RegisterController {
 
-    // 只保留 Service 依赖，彻底解耦
     private final RegisterService registerService;
 
     @PostMapping("/generateLink")
@@ -67,7 +66,6 @@ public class RegisterController {
     @PostMapping("/complete")
     public Result<Serializable> completeRegister(@RequestBody RegisterCompleteDTO dto) {
         try {
-            // 核心业务交由 Service 处理
             registerService.completeRegister(dto);
             return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "账号注册成功！");
         } catch (IllegalArgumentException e) {
