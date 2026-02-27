@@ -22,9 +22,9 @@ public class JwtUtils {
 
     private final SecretKey key;
 
-    //Access Token 过期时间 (30 分钟)
+    //Access Token 过期时间 (15 分钟)
     private static final long AT_EXPIRATION =
-            Duration.ofMinutes(30).toMillis();
+            Duration.ofMinutes(15).toMillis();
 
     // 秘钥256位
     public JwtUtils(@Value("${secret.jwt.key}") String jwtKey) {

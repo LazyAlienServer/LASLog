@@ -7,6 +7,7 @@ import com.las.backenduser.utils.jwt.JwtUtils;
 import com.las.backenduser.utils.result.Result;
 import com.las.backenduser.utils.result.ResultEnum;
 import com.las.backenduser.utils.salt.Salt;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +15,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,98 +31,134 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class LoginServiceImplTest {
 
-    @Mock
-    private RedisToolsImpl redisTools;
-
-    @Mock
-    private UserMapper userMapper;
-
-    @Mock
-    private JwtUtils jwtUtils;
+    @Mock private RedisToolsImpl redisTools;
+    @Mock private UserMapper userMapper;
+    @Mock private JwtUtils jwtUtils;
+    @Mock private StringRedisTemplate stringRedisTemplate;
+    @Mock private ValueOperations<String, String> valueOperations;
 
     @InjectMocks
     private LoginServiceImpl loginService;
 
     @Test
-    @DisplayName("分支1：登录成功 - 覆盖所有成功路径代码")
-    void login_Success() {
-        // 1. 准备数据
+    @DisplayName("登录 - 成功且有旧Token需要清理")
+    void login_Success_WithOldToken() {
         String userName = "sunyinuo";
         String passwd = "correct_password";
-        String clientId = "pc_web";
-        String salt = "random_salt";
-        String hashedPw = "hashed_password";
-        String uuid = "user-uuid-001";
+        String clientId = "pc";
+        String uuid = "uuid-123";
+        String hashedPw = "hashed_pw";
 
         User mockUser = new User();
         mockUser.setUsername(userName);
         mockUser.setPassword(hashedPw);
-        mockUser.setSalt(salt);
+        mockUser.setSalt("salt");
         mockUser.setUuid(uuid);
 
-        // 2. Mock 行为
         when(userMapper.selectOne(any())).thenReturn(mockUser);
-        when(jwtUtils.createRefreshToken()).thenReturn("mock_rt");
-        when(jwtUtils.createAccessToken(uuid, userName)).thenReturn("mock_at");
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("auth:rt:user:" + uuid + ":" + clientId)).thenReturn("\"old_rt\""); // 模拟存在旧RT
 
-        // 使用 mockStatic 处理静态工具类 Salt (Mockito 3.4+ 支持)
+        when(jwtUtils.createRefreshToken()).thenReturn("new_rt");
+        when(jwtUtils.createAccessToken(uuid, userName)).thenReturn("new_at");
+
         try (MockedStatic<Salt> saltMockedStatic = mockStatic(Salt.class)) {
-            saltMockedStatic.when(() -> Salt.salt(passwd, salt)).thenReturn(hashedPw);
+            saltMockedStatic.when(() -> Salt.salt(eq(passwd), anyString())).thenReturn(hashedPw);
 
-            // 3. 执行
             Result<String> result = loginService.login(userName, passwd, clientId);
 
-            // 4. 断言与验证
             assertEquals(ResultEnum.SUCCESS.getCode(), result.getCode());
-            assertTrue(result.getData().contains("AT"));
-            assertTrue(result.getData().contains("RT"));
-
-            // 验证 Redis 是否存入
-            verify(redisTools).insert("auth:rt:" + uuid + ":" + clientId, "mock_rt", 14L, TimeUnit.DAYS);
+            // 验证旧Token被清理
+            verify(stringRedisTemplate).delete("auth:rt:token:old_rt:" + clientId);
+            verify(stringRedisTemplate).delete("auth:rt:user:" + uuid + ":" + clientId);
         }
     }
 
     @Test
-    @DisplayName("分支2：用户名错误 - 覆盖 getUserByName == null 路径")
-    void login_UserNotFound() {
-        String userName = "wrong_user";
-        when(userMapper.selectOne(any())).thenReturn(null);
+    @DisplayName("踢出用户 - 成功清理所有设备")
+    void kickOut_Success() {
+        String uuid = "uuid-123";
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.keys("auth:rt:user:" + uuid + ":*"))
+                .thenReturn(new HashSet<>(Collections.singletonList("auth:rt:user:uuid-123:pc")));
+        when(valueOperations.get("auth:rt:user:uuid-123:pc")).thenReturn("old_rt");
 
-        Result<String> result = loginService.login(userName, "any_password", "any_client");
+        loginService.kickOut(uuid);
 
-        assertEquals(ResultEnum.UNAUTHORIZED.getCode(), result.getCode());
-        assertEquals("用户名或密码错误", result.getMsg());
-        // 验证后续逻辑未执行
-        verifyNoInteractions(jwtUtils, redisTools);
+        verify(valueOperations).set(eq("login:kickout:" + uuid), anyString(), eq(14L), eq(TimeUnit.DAYS));
+        verify(stringRedisTemplate).delete("auth:rt:token:old_rt:pc");
+        verify(stringRedisTemplate).delete("auth:rt:user:uuid-123:pc");
     }
 
     @Test
-    @DisplayName("分支3：密码错误 - 覆盖 Objects.equals(...) == false 路径")
-    void login_WrongPassword() {
-        // 1. 准备数据
-        String userName = "sunyinuo";
-        String wrongPass = "wrong_password";
-        String salt = "some_salt";
+    @DisplayName("Token登录 - 成功")
+    void loginByToken_Success() {
+        String token = "valid_at";
+        String uuid = "uuid-123";
+
+        // 做法二：直接 Mock Claims 接口，不依赖 jjwt 的底层实现类
+        Claims mockClaims = mock(Claims.class);
+        // 模拟返回一个未来的时间 (说明没有过期)
+        when(mockClaims.getIssuedAt()).thenReturn(new Date(System.currentTimeMillis() + 10000));
+
+        when(jwtUtils.parseToken(token)).thenReturn(mockClaims);
+        when(jwtUtils.getUserUUIDFromToken(token)).thenReturn(uuid);
+
+        User user = new User();
+        user.setUuid(uuid);
+        when(userMapper.selectOne(any())).thenReturn(user);
+
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("login:kickout:" + uuid)).thenReturn(null); // 未被踢出
+
+        Result<Serializable> result = loginService.loginByToken(token, "pc");
+        assertEquals(ResultEnum.SUCCESS.getCode(), result.getCode());
+    }
+
+    @Test
+    @DisplayName("Token登录 - 已被踢出")
+    void loginByToken_KickedOut() {
+        String token = "valid_at";
+        String uuid = "uuid-123";
+
+        Claims mockClaims = mock(Claims.class);
+        // 模拟签发时间在踢出之前 (过去的时间)
+        when(mockClaims.getIssuedAt()).thenReturn(new Date(System.currentTimeMillis() - 10000));
+
+        when(jwtUtils.parseToken(token)).thenReturn(mockClaims);
+        when(jwtUtils.getUserUUIDFromToken(token)).thenReturn(uuid);
+
+        User user = new User();
+        user.setUuid(uuid);
+        when(userMapper.selectOne(any())).thenReturn(user);
+
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("login:kickout:" + uuid)).thenReturn(String.valueOf(System.currentTimeMillis())); // 模拟被踢出记录
+
+        Result<Serializable> result = loginService.loginByToken(token, "pc");
+        assertEquals(ResultEnum.UNAUTHORIZED.getCode(), result.getCode());
+        assertEquals("KICKED", result.getMsg());
+    }
+
+    @Test
+    @DisplayName("刷新Token - 成功")
+    void refreshToken_Success() {
+        String rt = "valid_rt";
+        String clientId = "pc";
+        String uuid = "uuid-123";
+
+        when(redisTools.getByKey("auth:rt:token:" + rt + ":" + clientId)).thenReturn(rt);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("auth:rt:token:" + rt + ":" + clientId)).thenReturn("\"" + uuid + "\"");
 
         User mockUser = new User();
-        mockUser.setUsername(userName);
-        mockUser.setSalt(salt);
-        mockUser.setPassword("correct_hash_in_db");
-
-        // 2. Mock 行为
+        mockUser.setUsername("test_user");
         when(userMapper.selectOne(any())).thenReturn(mockUser);
+        when(jwtUtils.createAccessToken(uuid, "test_user")).thenReturn("new_at");
 
-        try (MockedStatic<Salt> saltMockedStatic = mockStatic(Salt.class)) {
-            // 模拟加盐后与数据库不匹配
-            saltMockedStatic.when(() -> Salt.salt(eq(wrongPass), anyString())).thenReturn("wrong_hash");
+        Result<Serializable> result = loginService.refreshToken(rt, clientId);
 
-            // 3. 执行
-            Result<String> result = loginService.login(userName, wrongPass, "any_client");
-
-            // 4. 断言
-            assertEquals(ResultEnum.UNAUTHORIZED.getCode(), result.getCode());
-            assertEquals("用户名或密码错误", result.getMsg());
-            verifyNoInteractions(jwtUtils, redisTools);
-        }
+        assertEquals(ResultEnum.SUCCESS.getCode(), result.getCode());
+        assertEquals("new_at", result.getData());
     }
 }

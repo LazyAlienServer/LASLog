@@ -2,6 +2,8 @@ package com.las.backenduser.service;
 
 import com.las.backenduser.utils.result.Result;
 
+import java.io.Serializable;
+
 public interface LoginService {
 
     /**
@@ -13,5 +15,7 @@ public interface LoginService {
      * @return AT+RT
      */
     Result<String> login(String userName, String passwd,String clientId);
+
+    Result<Serializable> loginByToken(String token, String clientId);
 
 }

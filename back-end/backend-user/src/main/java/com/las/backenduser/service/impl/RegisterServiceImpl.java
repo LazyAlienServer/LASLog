@@ -78,7 +78,7 @@ public class RegisterServiceImpl implements RegisterService {
 
         // 过期校验必须放在 try-catch 的外面！
         if (System.currentTimeMillis() > expireMs) {
-            throw new IllegalArgumentException("该邀请链接已过期");
+            throw new IllegalArgumentException("该激活链接已过期");
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -128,7 +128,7 @@ public class RegisterServiceImpl implements RegisterService {
     @Override
     @Transactional(rollbackFor = Exception.class) // 保证数据库插入异常时事务回滚
     public void completeRegister(RegisterCompleteDTO dto) throws IOException {
-        if (dto.getToken() == null || dto.getMinecraftId() == null || dto.getPassword() == null) {
+        if (dto.getToken() == null || dto.getMinecraftId() == null || dto.getPassword() == null || dto.getUsername() == null) {
             throw new IllegalArgumentException("注册信息不完整");
         }
 
@@ -136,7 +136,7 @@ public class RegisterServiceImpl implements RegisterService {
         Map<String, Object> userInfo = this.verifyAndDecodeToken(dto.getToken());
         String qq = (String) userInfo.get("qq");
         long expireMs = (Long) userInfo.get("expireMs");
-        String signature = (String) userInfo.get(sign);
+        String signature = (String) userInfo.get("sign");
 
         // 2. Redis 拦截
         String redisKey = TOKEN_BLACKLIST_PREFIX + signature;
@@ -144,16 +144,24 @@ public class RegisterServiceImpl implements RegisterService {
             throw new IllegalArgumentException("该激活链接已被使用！请勿重复提交。");
         }
 
-        // 3. Mojang API 校验
+        Long existCount = userMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                        .eq(User::getUsername, dto.getUsername())
+        );
+        if (existCount != null && existCount > 0) {
+            throw new IllegalArgumentException("该用户名已被注册，请更换一个");
+        }
+
+        // 4. Mojang API 校验
         String uuid = this.checkMinecraftId(dto.getMinecraftId());
         if (uuid == null) {
             throw new IllegalArgumentException("Minecraft ID 不存在或非正版");
         }
 
-        // 4. 密码加盐处理
+        // 5. 密码加盐处理
         Password securePassword = Salt.salt(dto.getPassword());
 
-        // 5. 保存到 PostgreSQL
+        // 6. 保存到 PostgreSQL
         User user = new User();
         user.setQq(Long.valueOf(qq));
         user.setUsername(dto.getUsername());
@@ -170,7 +178,7 @@ public class RegisterServiceImpl implements RegisterService {
         user.setMainMinecraftUuid(uuid);
         userMapper.insert(user);
 
-        // 6. Token 存入 Redis 黑名单
+        // 7. Token 存入 Redis 黑名单
         long remainingMs = expireMs - System.currentTimeMillis();
         if (remainingMs > 0) {
             stringRedisTemplate.opsForValue().set(redisKey, "1", remainingMs, TimeUnit.MILLISECONDS);

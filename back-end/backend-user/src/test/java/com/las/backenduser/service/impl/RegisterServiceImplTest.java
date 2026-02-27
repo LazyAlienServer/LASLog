@@ -114,7 +114,7 @@ class RegisterServiceImplTest {
         long past = System.currentTimeMillis() - 10000;
         String token = createTestToken("123", 1, past, false, false);
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.verifyAndDecodeToken(token));
-        assertEquals("该邀请链接已过期", ex.getMessage());
+        assertEquals("该激活链接已过期", ex.getMessage());
     }
 
     @Test
@@ -181,38 +181,15 @@ class RegisterServiceImplTest {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
         assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
 
-        dto.setToken("123"); // 只有 token 不行
-        assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
-    }
-
-    @Test
-    void completeRegister_Blacklisted() {
-        RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        // 补全部分参数，测试缺 username 的情况
+        dto.setToken("123");
         dto.setMinecraftId("Notch");
-        dto.setPassword("pwd");
-
-        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
-
+        dto.setPassword("pwd123");
         assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
     }
 
     @Test
-    void completeRegister_MinecraftIdInvalid() {
-        RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
-        dto.setMinecraftId("FakeUser");
-        dto.setPassword("pwd");
-
-        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
-        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(null); // 返回空，模拟找不到
-
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
-        assertEquals("Minecraft ID 不存在或非正版", ex.getMessage());
-    }
-
-    @Test
-    void completeRegister_PasswordNull() { // 顺便帮你补上了方法名拼写漏掉的 'p'
+    void completeRegister_PasswordNull() {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
         dto.setMinecraftId("a");
         dto.setUsername("1");
@@ -220,6 +197,59 @@ class RegisterServiceImplTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
         assertEquals("注册信息不完整", ex.getMessage());
+    }
+
+    @Test
+    void completeRegister_Blacklisted() {
+        RegisterCompleteDTO dto = new RegisterCompleteDTO();
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setMinecraftId("Notch");
+        dto.setUsername("NotchUser");
+        dto.setPassword("pwd");
+
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
+    }
+
+    // ================== 新增：用户名查重拦截测试 ==================
+    @Test
+    void completeRegister_UsernameAlreadyExists() {
+        RegisterCompleteDTO dto = new RegisterCompleteDTO();
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setMinecraftId("Notch");
+        dto.setUsername("DuplicateUser");
+        dto.setPassword("pwd123");
+
+        // 模拟 Redis 未拦截
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        // 模拟数据库查询该用户名已存在 (返回 > 0 的数)
+        when(userMapper.selectCount(any())).thenReturn(1L);
+
+        // 验证抛出异常
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
+        assertEquals("该用户名已被注册，请更换一个", ex.getMessage());
+
+        // 【Fail-Fast 验证】：拦截后，必须没有去请求 Mojang API，避免性能浪费
+        verify(restTemplate, never()).getForObject(anyString(), eq(Map.class));
+    }
+    // ==============================================================
+
+    @Test
+    void completeRegister_MinecraftIdInvalid() {
+        RegisterCompleteDTO dto = new RegisterCompleteDTO();
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setMinecraftId("FakeUser");
+        dto.setUsername("NewUser");
+        dto.setPassword("pwd");
+
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        // 补充对新增逻辑的 Mock：模拟用户名未重复
+        when(userMapper.selectCount(any())).thenReturn(0L);
+        when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(null); // 返回空，模拟找不到
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
+        assertEquals("Minecraft ID 不存在或非正版", ex.getMessage());
     }
 
     @Test
@@ -248,6 +278,8 @@ class RegisterServiceImplTest {
         dto.setPassword("pwd123");
 
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        // 补充对新增逻辑的 Mock：模拟用户名未重复
+        when(userMapper.selectCount(any())).thenReturn(0L);
 
         Map<String, String> mockResponse = new HashMap<>();
         mockResponse.put("id", "real-uuid-123");
@@ -293,6 +325,9 @@ class RegisterServiceImplTest {
 
         // 3. Mock 必要的外部依赖
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        // 补充对新增逻辑的 Mock：模拟用户名未重复
+        when(userMapper.selectCount(any())).thenReturn(0L);
+
         Map<String, String> mockResponse = new HashMap<>();
         mockResponse.put("id", "real-uuid-123");
         when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(mockResponse);
