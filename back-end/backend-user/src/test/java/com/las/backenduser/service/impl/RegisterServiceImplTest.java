@@ -227,11 +227,11 @@ class RegisterServiceImplTest {
         String username = "SomeWeirdUser";
         String expectedUrl = "https://api.mojang.com/users/profiles/minecraft/" + username;
 
-        // 捏造一个不包含 "id" 的 Map（比如 API 格式变了，或者返回了其他提示）
         Map<String, Object> mockResponse = new HashMap<>();
         mockResponse.put("errorMessage", "Something went wrong");
 
-        when(restTemplate.getForObject(expectedUrl, Map.class));
+        when(restTemplate.getForObject(expectedUrl, Map.class))
+                .thenReturn(mockResponse);
 
         String result = registerService.checkMinecraftId(username);
 

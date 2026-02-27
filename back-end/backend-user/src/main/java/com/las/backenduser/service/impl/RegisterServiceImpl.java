@@ -101,7 +101,7 @@ public class RegisterServiceImpl implements RegisterService {
         } catch (HttpClientErrorException.NotFound e) {
             return null;
         } catch (Exception e) {
-            throw new IOException("请求Mojang API失败");
+            throw new IOException("请求Mojang API失败", e);
         }
     }
 
