@@ -42,3 +42,7 @@ remote:
     token: '@LazyAlienServer'
 server:
   port: 8081
+secret:
+  jwt:
+    key: 'c(<sJM3RMjpv-RV?6Z&TV]a7SRMe3AKC>ajZTT,WTUyPWJ@+vfYn"Af85-4j!Fa2HV&CSxxR+MX|B@vyAfCJ|2uce.R+s)?2cGA<C&7Q;N]%t<(RS!A:%V2v[G:"W)U-8[k-Wa|s"Uxf,*SfbUQ#NFvY%?Wd5:|man!3U>h2bKXr7>?kT%h?S6D(*]MaPvZ.m]TERR#@6#rp,U@m:2:cHWkxt&rBAHvtE>=Ket&f55Cs(RWTY-_"+A;*[Ge*xYx?'
+

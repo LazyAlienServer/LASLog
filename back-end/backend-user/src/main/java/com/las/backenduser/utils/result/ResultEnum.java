@@ -9,7 +9,8 @@ import lombok.Getter;
 public enum ResultEnum {
     //常见code
     SUCCESS(200),
-    SERVER_ERROR(403),
+    FORBIDDEN(403),
+    UNAUTHORIZED(401),
     NOT_FOUND(404);
 
     private final Integer code;

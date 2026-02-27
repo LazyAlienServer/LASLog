@@ -25,7 +25,7 @@ public class RegisterController {
     @PostMapping("/generateLink")
     public Result<String> generateLink(@RequestBody GenerateLinkDTO dto) {
         if (dto.getQq() == null || dto.getDirection() == null) {
-            return ResultUtil.result(ResultEnum.SERVER_ERROR.getCode(), null, "QQ号和审核方向不能为空");
+            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), null, "QQ号和审核方向不能为空");
         }
 
         long expireTime = System.currentTimeMillis() + 20 * 60 * 1000L;
@@ -39,7 +39,7 @@ public class RegisterController {
     public Result<String> checkMinecraftId(@RequestParam String username) throws IOException {
         if (username == null || username.trim().isEmpty()) {
             // 强转 null 解决泛型推导问题
-            return ResultUtil.result(ResultEnum.SERVER_ERROR.getCode(), (String) null, "Minecraft ID 不能为空");
+            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), (String) null, "Minecraft ID 不能为空");
         }
 
         String uuid = registerService.checkMinecraftId(username);

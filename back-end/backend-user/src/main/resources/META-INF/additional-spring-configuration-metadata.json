@@ -9,5 +9,10 @@
       "name": "remote.ws.token",
       "type": "java.lang.String",
       "description": "Description for remote.ws.token."
+    },
+    {
+      "name": "secret.jwt.key",
+      "type": "java.lang.String",
+      "description": "Description for secret.jwt.key."
     }
   ] }

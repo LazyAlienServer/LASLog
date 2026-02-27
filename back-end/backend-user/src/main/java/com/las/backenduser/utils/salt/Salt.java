@@ -11,6 +11,9 @@ public class Salt {
         String saltValue = UUID.randomUUID().toString();
         return new Password(DigestUtils.sha256Hex(saltValue+password),saltValue);
     }
+    public static String salt(String password, String salt){
+        return DigestUtils.sha256Hex(salt+password);
+    }
     private Salt(){
         //INOP
     }
