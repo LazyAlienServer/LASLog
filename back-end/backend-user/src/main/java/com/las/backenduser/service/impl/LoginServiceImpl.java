@@ -151,20 +151,24 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public Result<Serializable> loginByToken(String accessToken, String clientId) {
-
-        try{
+        try {
             Claims claims = jwtUtils.parseToken(accessToken);
-            String userUuid = jwtUtils.getUserUUIDFromToken(accessToken);
-            User getUserByUuid = userMapper.selectOne(new LambdaQueryWrapper<User>()
-                    .eq(User::getUuid, userUuid));
+            String uuid = claims.getSubject();
 
-            if (isKickedOut(getUserByUuid.getUuid(), claims.getIssuedAt())){
-                return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "KICKED");
+            if (isKickedOut(uuid, claims.getIssuedAt())) {
+                return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "凭证已失效，请重新登录");
             }
-            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "登录成功");
 
-        }catch (Exception e){
-            return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), e.getMessage(), null);
+            String userUuidKey = REDIS_RT_USER_PREFIX + uuid + ":" + clientId;
+
+            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(userUuidKey))) {
+                return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "当前设备已登出或会话已结束，请重新登录");
+            }
+
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "登录有效");
+
+        } catch (Exception e) {
+            return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "AccessToken无效或已过期");
         }
     }
 

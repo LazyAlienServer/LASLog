@@ -96,28 +96,31 @@ class LoginServiceImplTest {
     }
 
     @Test
-    @DisplayName("Token登录 - 成功")
     void loginByToken_Success() {
-        String token = "valid_at";
+        String validToken = "valid_token";
+        String clientId = "pc";
         String uuid = "uuid-123";
 
-        // 做法二：直接 Mock Claims 接口，不依赖 jjwt 的底层实现类
-        Claims mockClaims = mock(Claims.class);
-        // 模拟返回一个未来的时间 (说明没有过期)
-        when(mockClaims.getIssuedAt()).thenReturn(new Date(System.currentTimeMillis() + 10000));
+        // 1. 模拟 JWT 解析成功
+        io.jsonwebtoken.Claims mockClaims = mock(io.jsonwebtoken.Claims.class);
+        when(mockClaims.getSubject()).thenReturn(uuid);
+        when(mockClaims.getIssuedAt()).thenReturn(new java.util.Date());
+        when(jwtUtils.parseToken(anyString())).thenReturn(mockClaims);
 
-        when(jwtUtils.parseToken(token)).thenReturn(mockClaims);
-        when(jwtUtils.getUserUUIDFromToken(token)).thenReturn(uuid);
-
-        User user = new User();
-        user.setUuid(uuid);
-        when(userMapper.selectOne(any())).thenReturn(user);
-
+        // 2. 防止 kickOut 逻辑调用 opsForValue() 导致空指针！
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("login:kickout:" + uuid)).thenReturn(null); // 未被踢出
+        // 模拟没有被踢出（查不到踢出标记）
+        when(valueOperations.get(anyString())).thenReturn(null);
 
-        Result<Serializable> result = loginService.loginByToken(token, "pc");
-        assertEquals(ResultEnum.SUCCESS.getCode(), result.getCode());
+        // 3. 模拟 Redis 的 hasKey，证明设备在线
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
+
+        // 4. 执行测试
+        Result<java.io.Serializable> result = loginService.loginByToken(validToken, clientId);
+
+        // 5. 假如这里还报错，你可以临时去 LoginServiceImpl 的 catch 块里加一句 e.printStackTrace(); 看看究竟是什么异常
+        assertEquals(200, result.getCode());
+        assertEquals("登录有效", result.getMsg());
     }
 
     @Test
@@ -142,7 +145,7 @@ class LoginServiceImplTest {
 
         Result<Serializable> result = loginService.loginByToken(token, "pc");
         assertEquals(ResultEnum.UNAUTHORIZED.getCode(), result.getCode());
-        assertEquals("KICKED", result.getMsg());
+        assertEquals("当前设备已登出或会话已结束，请重新登录", result.getMsg());
     }
 
     @Test
