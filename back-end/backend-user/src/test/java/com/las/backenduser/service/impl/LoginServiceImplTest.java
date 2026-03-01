@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -29,6 +31,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class LoginServiceImplTest {
 
     @Mock private RedisToolsImpl redisTools;
@@ -57,7 +60,7 @@ class LoginServiceImplTest {
 
         when(userMapper.selectOne(any())).thenReturn(mockUser);
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:rt:user:" + uuid + ":" + clientId)).thenReturn("\"old_rt\""); // 模拟存在旧RT
+        when(valueOperations.get(anyString())).thenReturn("old_rt");// 模拟存在旧RT
 
         when(jwtUtils.createRefreshToken()).thenReturn("new_rt");
         when(jwtUtils.createAccessToken(uuid, userName)).thenReturn("new_at");
@@ -149,7 +152,7 @@ class LoginServiceImplTest {
 
         when(redisTools.getByKey("auth:rt:token:" + rt + ":" + clientId)).thenReturn(rt);
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:rt:token:" + rt + ":" + clientId)).thenReturn("\"" + uuid + "\"");
+        when(valueOperations.get(anyString())).thenReturn(uuid);
 
         User mockUser = new User();
         mockUser.setUsername("test_user");

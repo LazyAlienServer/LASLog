@@ -1,12 +1,12 @@
 package com.las.backenduser.utils.result;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+
+import java.io.Serializable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-@SpringBootTest
 class ResultUtilTest {
 
     @Test
@@ -17,7 +17,7 @@ class ResultUtilTest {
 
     @Test
     void resultWithOutData(){
-        Result testResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "200 success" );
+        Result<Serializable> testResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "200 success" );
         assertThat(testResult.getData()).isNull();
     }
 

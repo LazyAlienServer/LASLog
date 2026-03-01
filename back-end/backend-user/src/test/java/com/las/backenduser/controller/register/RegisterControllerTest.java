@@ -79,7 +79,7 @@ class RegisterControllerTest {
     }
 
     @Test
-    void checkMinecraftId_BlankUsername() throws IOException {
+    void checkMinecraftId_BlankUsername() {
         Result<String> result = registerController.checkMinecraftId("");
         assertEquals(403, result.getCode());
 

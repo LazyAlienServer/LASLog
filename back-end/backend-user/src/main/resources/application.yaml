@@ -2,7 +2,7 @@ spring:
   application:
     name: backend-user
   datasource:
-    url: jdbc:postgresql://${DB_HOST:lasteamcity.ddns.net}:${DB_PORT:5432}/${DB_NAME:postgres}
+    url: jdbc:postgresql://${DB_HOST:116.233.20.28}:${DB_PORT:5432}/${DB_NAME:postgres}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:Gp9#q2Wz!mR6*xK4}
     driver-class-name: org.postgresql.Driver
@@ -19,7 +19,7 @@ spring:
         format_sql: true
   data:
     redis:
-      host: ${REDIS_HOST:lasteamcity.ddns.net}
+      host: ${REDIS_HOST:116.233.20.28}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASS:las} # 如果没有密码留空
       database: 0
@@ -42,6 +42,8 @@ remote:
     token: '@LazyAlienServer'
 server:
   port: 8081
+jwt:
+  token-salt: "八重神子让我魅力无限"
 secret:
   jwt:
     key: 'c(<sJM3RMjpv-RV?6Z&TV]a7SRMe3AKC>ajZTT,WTUyPWJ@+vfYn"Af85-4j!Fa2HV&CSxxR+MX|B@vyAfCJ|2uce.R+s)?2cGA<C&7Q;N]%t<(RS!A:%V2v[G:"W)U-8[k-Wa|s"Uxf,*SfbUQ#NFvY%?Wd5:|man!3U>h2bKXr7>?kT%h?S6D(*]MaPvZ.m]TERR#@6#rp,U@m:2:cHWkxt&rBAHvtE>=Ket&f55Cs(RWTY-_"+A;*[Ge*xYx?'
