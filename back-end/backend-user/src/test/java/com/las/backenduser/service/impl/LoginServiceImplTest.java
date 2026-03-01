@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -81,14 +82,15 @@ class LoginServiceImplTest {
     @DisplayName("踢出用户 - 成功清理所有设备")
     void kickOut_Success() {
         String uuid = "uuid-123";
+        when(userMapper.selectCount(any())).thenReturn(1L);
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(stringRedisTemplate.keys("auth:rt:user:" + uuid + ":*"))
                 .thenReturn(new HashSet<>(Collections.singletonList("auth:rt:user:uuid-123:pc")));
         when(valueOperations.get("auth:rt:user:uuid-123:pc")).thenReturn("old_rt");
 
-        loginService.kickOut(uuid);
+        loginService.kickOutByUuid(uuid);
 
-        verify(valueOperations).set(eq("login:kickout:" + uuid), anyString(), eq(14L), eq(TimeUnit.DAYS));
+        verify(valueOperations).set(eq("login:kickout:" + uuid), anyString(), eq(16L), eq(TimeUnit.MINUTES));
         verify(stringRedisTemplate).delete("auth:rt:token:old_rt:pc");
         verify(stringRedisTemplate).delete("auth:rt:user:uuid-123:pc");
     }
@@ -163,5 +165,108 @@ class LoginServiceImplTest {
 
         assertEquals(ResultEnum.SUCCESS.getCode(), result.getCode());
         assertEquals("new_at", result.getData());
+    }
+
+    // ================= kickOut (按 UUID 踢出) 测试 =================
+    @Test
+    void kickOut_UserNotFound() {
+        // 模拟数据库查无此人
+        when(userMapper.selectCount(any())).thenReturn(0L);
+
+        Result<Serializable> result = loginService.kickOutByUuid("invalid-uuid");
+
+        assertEquals(404, result.getCode());
+        assertEquals("未找到用户", result.getMsg());
+        verify(stringRedisTemplate, never()).keys(anyString()); // 确保直接拦截，没查 Redis
+    }
+
+    @Test
+    void kickOut_Success_WithActiveTokens() {
+        // 模拟用户存在
+        when(userMapper.selectCount(any())).thenReturn(1L);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        // 模拟 Redis 中存在该用户的 Token
+        Set<String> keys = new HashSet<>(java.util.Collections.singletonList("auth:rt:user:uuid-123:pc"));
+        when(stringRedisTemplate.keys(anyString())).thenReturn(keys);
+        when(valueOperations.get("auth:rt:user:uuid-123:pc")).thenReturn("old_rt");
+
+        Result<Serializable> result = loginService.kickOutByUuid("uuid-123");
+
+        assertEquals(200, result.getCode());
+        assertEquals("踢出成功", result.getMsg());
+        // 验证确实执行了双向删除
+        verify(stringRedisTemplate).delete("auth:rt:token:old_rt:pc");
+        verify(stringRedisTemplate).delete("auth:rt:user:uuid-123:pc");
+    }
+
+    @Test
+    void kickOut_Success_AlreadyOffline() {
+        when(userMapper.selectCount(any())).thenReturn(1L);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        // 模拟 Redis 中找不到任何该用户的登录凭证
+        when(stringRedisTemplate.keys(anyString())).thenReturn(new java.util.HashSet<>());
+
+        Result<Serializable> result = loginService.kickOutByUuid("uuid-123");
+
+        assertEquals(200, result.getCode());
+        assertEquals("未找到用户的登录状态或已经踢出", result.getMsg());
+    }
+
+    // ================= kickOutByUsername (按 Username 踢出) 测试 =================
+    @Test
+    void kickOutByUsername_NotFound() {
+        when(userMapper.selectOne(any())).thenReturn(null);
+
+        Result<Serializable> result = loginService.kickOutByUsername("ghost_user");
+
+        assertEquals(404, result.getCode());
+        assertEquals("未找到用户", result.getMsg());
+    }
+
+    @Test
+    void kickOutByUsername_Success() {
+        // 模拟通过 username 查到了对应的 user
+        User mockUser = new User();
+        mockUser.setUuid("uuid-123");
+        when(userMapper.selectOne(any())).thenReturn(mockUser);
+
+        // 模拟底层 kickOut 所需的数据
+        when(userMapper.selectCount(any())).thenReturn(1L);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.keys(anyString())).thenReturn(new java.util.HashSet<>());
+
+        Result<Serializable> result = loginService.kickOutByUsername("real_user");
+
+        assertEquals(200, result.getCode());
+    }
+
+    // ================= logout (主动登出) 测试 =================
+    @Test
+    void logout_Success() {
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        // 模拟找到了用户的登录 RT
+        when(valueOperations.get("auth:rt:user:uuid-123:pc")).thenReturn("old_rt");
+
+        Result<Serializable> result = loginService.logout("uuid-123", "pc");
+
+        assertEquals(200, result.getCode());
+        assertEquals("登出成功", result.getMsg());
+        // 验证执行了双向删除
+        verify(stringRedisTemplate).delete("auth:rt:token:old_rt:pc");
+        verify(stringRedisTemplate).delete("auth:rt:user:uuid-123:pc");
+    }
+
+    @Test
+    void logout_AlreadyOffline() {
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        // 模拟用户本身就没登录或已过期
+        when(valueOperations.get(anyString())).thenReturn(null);
+
+        Result<Serializable> result = loginService.logout("uuid-123", "pc");
+
+        assertEquals(403, result.getCode());
+        assertEquals("未找到登录状态或已下线", result.getMsg());
     }
 }

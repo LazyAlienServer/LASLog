@@ -28,10 +28,19 @@ public class LoginController {
         return loginService.login(loginRequestDTO.getUsername(),loginRequestDTO.getPassword(), loginRequestDTO.getClientId());
     }
 
-    @PostMapping("/kick")
+    @PostMapping("/kickByUuid")
     public Result<Serializable> kick(@RequestParam String userUuid){
-        loginService.kickOut(userUuid);
-        return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "踢出成功");
+       return loginService.kickOutByUuid(userUuid);
+    }
+
+    @PostMapping("/kickByUserName")
+    public Result<Serializable> kickByUserName(@RequestParam String userName){
+        return loginService.kickOutByUsername(userName);
+    }
+
+    @PostMapping("/logout")
+    public Result<Serializable> logout(@RequestParam String userUuid, @RequestParam String clientId){
+        return loginService.logout(userUuid, clientId);
     }
 
     @GetMapping("/loginByToken")

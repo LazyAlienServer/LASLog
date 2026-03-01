@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.io.Serializable;
+
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,9 +61,12 @@ class LoginControllerTest {
     }
 
     @Test
-    @DisplayName("POST /login/kick - 成功踢人")
+    @DisplayName("POST /login/kickByUuid - 成功踢人")
     void testKickEndpoint() throws Exception {
-        mockMvc.perform(post("/login/kick")
+        Result<Serializable> mockResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "踢出成功");
+        when(loginService.kickOutByUuid("uuid-123")).thenReturn(mockResult);
+
+        mockMvc.perform(post("/login/kickByUuid")
                         .param("userUuid", "uuid-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
@@ -91,5 +96,19 @@ class LoginControllerTest {
                         .param("clientId", "pc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+
+    @Test
+    @DisplayName("POST /login/kickByUserName - 成功按用户名踢人")
+    void testKickByUsernameEndpoint() throws Exception {
+        Result<Serializable> mockResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "踢出成功");
+        when(loginService.kickOutByUsername("testuser")).thenReturn(mockResult);
+
+        mockMvc.perform(post("/login/kickByUserName")
+                        .param("userName", "testuser"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.msg").value("踢出成功"));
     }
 }

@@ -73,9 +73,32 @@ public class LoginServiceImpl implements LoginService {
         return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "", "用户名或密码错误");
     }
 
-    public void kickOut(String uuid) {
-        stringRedisTemplate.opsForValue().set(REDIS_KICKOUT_PREFIX + uuid, String.valueOf(System.currentTimeMillis()), 14, TimeUnit.DAYS);
+    /**
+     * 根据 UUID 踢出用户
+     */
+    public Result<Serializable> kickOutByUuid(String uuid) {
+        // 1. 先校验数据库里到底有没有这个用户（防止乱传 UUID）
+        Long count = userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getUuid, uuid));
+        if (count == null || count == 0) {
+            return ResultUtil.result(ResultEnum.NOT_FOUND.getCode(), "未找到用户");
+        }
+
+        // 2. 无论当前是否在线，都打上踢出标记（废掉他手里可能还没过期的 15 分钟 AccessToken）
+        stringRedisTemplate.opsForValue().set(
+                REDIS_KICKOUT_PREFIX + uuid,
+                String.valueOf(System.currentTimeMillis()),
+                16L, TimeUnit.MINUTES
+        );
+
+        // 3. 查找该用户在所有设备上的长效登录凭证 (RefreshToken)
         Set<String> userRtKeys = stringRedisTemplate.keys(REDIS_RT_USER_PREFIX + uuid + ":*");
+
+        // 4. 如果没有查到 RT 记录，说明本来就不在线
+        if (userRtKeys != null && userRtKeys.isEmpty()) {
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "未找到用户的登录状态或已经踢出");
+        }
+
+        // 5. 遍历并执行双向删除
         for (String userRtKey : userRtKeys) {
             String oldRt = stringRedisTemplate.opsForValue().get(userRtKey);
             if (oldRt != null) {
@@ -83,6 +106,37 @@ public class LoginServiceImpl implements LoginService {
                 stringRedisTemplate.delete(REDIS_RT_TOKEN_PREFIX + oldRt + ":" + clientId);
             }
             stringRedisTemplate.delete(userRtKey);
+        }
+
+        return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "踢出成功");
+    }
+
+    /**
+     * 根据 Username 踢出用户
+     */
+    public Result<Serializable> kickOutByUsername(String username) {
+        // 先通过用户名查出对应的 UUID
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+        if (user == null) {
+            return ResultUtil.result(ResultEnum.NOT_FOUND.getCode(), "未找到用户");
+        }
+
+        // 复用 UUID 踢出逻辑
+        return kickOutByUuid(user.getUuid());
+    }
+
+    /**
+     * 登出账户
+     */
+    public Result<Serializable> logout(String uuid, String clientId) {
+        String userUuidKey = REDIS_RT_USER_PREFIX + uuid + ":" + clientId;
+        String oldRt = stringRedisTemplate.opsForValue().get(userUuidKey);
+        if (oldRt != null) {
+            stringRedisTemplate.delete(REDIS_RT_TOKEN_PREFIX + oldRt + ":" + clientId);
+            stringRedisTemplate.delete(userUuidKey);
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "登出成功");
+        } else {
+            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), "未找到登录状态或已下线");
         }
     }
 
@@ -119,7 +173,6 @@ public class LoginServiceImpl implements LoginService {
         String userUuid = stringRedisTemplate.opsForValue().get(redisKey);
 
         if (userUuid != null) {
-            // 4. 彻底告别 replace
             User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUuid, userUuid));
             String accessToken = jwtUtils.createAccessToken(userUuid, user.getUsername());
             return ResultUtil.result(ResultEnum.SUCCESS.getCode(), accessToken, null);
