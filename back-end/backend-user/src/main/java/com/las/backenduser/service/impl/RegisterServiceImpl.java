@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 public class RegisterServiceImpl implements RegisterService {
+    String tokenSalt = "八重神子让我魅力无限，有一次我们班平均分倒数第一，老师气坏了，指着我们破口大骂，你们是我带过的最差的一届！我心想，这么骂下去也不是办法，有什么办法可以控制老师情绪了，有了，我想起了原神中最有魅力的八重神子，于是我模仿着八重的姿态走上了讲台，摸了摸老师的头，怎么啦，小家伙，你看起来不太开心，说完，我舔了舔爪子，学狐狸嗷呜叫了起来，全班同学都震惊到了，这就是八重神子吧？太美了，好妖娆，老师也被我迷住了，表情也变得温和，慈祥，后来，这件事被同学们发到网上爆火了起来，各大导演纷纷找到我，让我去演姐己，说我有狐狸那种邪魅的劲，但我都拒绝了，因为八重神子和妲己不一样，一天下午，我打开了手机，公司老总给我发了这样一条信息，你要是姐己，我愿意当你的纣王，你要是八重，我愿意当你的雷电将军！我感动极了，马上找到了公司老总，嗷呜，我模仿着狐狸的模样，老总看到后心都化了，把我拥入怀里，你是我见过，最美的八重神子…";
     String sign = "signature";
     String expireMsa = "expireMs";
     private final RestTemplate restTemplate = new RestTemplate();
@@ -36,27 +37,27 @@ public class RegisterServiceImpl implements RegisterService {
         String base64Qq = Base64.getUrlEncoder().withoutPadding().encodeToString(qq.getBytes(StandardCharsets.UTF_8));
         String base64Expire = Base64.getUrlEncoder().withoutPadding().encodeToString(String.valueOf(expireMs).getBytes(StandardCharsets.UTF_8));
         String messageBody = base64Qq + "-" + direction + "-" + base64Expire;
-        String signature = DigestUtils.sha256Hex((messageBody+"原神牛逼").getBytes(StandardCharsets.UTF_8));
+        String signature = DigestUtils.sha256Hex((messageBody + tokenSalt).getBytes(StandardCharsets.UTF_8));
         return messageBody + "." + signature;
     }
 
     @Override
     public Map<String, Object> verifyAndDecodeToken(String token) {
         if (token == null || !token.contains(".")) {
-            throw new IllegalArgumentException("Token格式非法");
+            throw new IllegalArgumentException("无效的激活链接");
         }
 
         String[] parts = token.split("\\.");
         if (parts.length != 2) {
-            throw new IllegalArgumentException("Token格式非法");
+            throw new IllegalArgumentException("无效的激活链接");
         }
 
         String messageBody = parts[0];
         String signature = parts[1];
 
-        String expectedSignature = DigestUtils.sha256Hex((messageBody + "原神牛逼").getBytes(StandardCharsets.UTF_8));
+        String expectedSignature = DigestUtils.sha256Hex((messageBody + tokenSalt).getBytes(StandardCharsets.UTF_8));
         if (!expectedSignature.equals(signature)) {
-            throw new IllegalArgumentException("Token签名校验失败，可能已被篡改");
+            throw new IllegalArgumentException("无效的激活链接");
         }
 
         String[] bodyParts = messageBody.split("-");
@@ -114,7 +115,7 @@ public class RegisterServiceImpl implements RegisterService {
         // 2. Redis 黑名单检查
         String redisKey = TOKEN_BLACKLIST_PREFIX + signature;
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(redisKey))) {
-            throw new IllegalArgumentException("该激活链接已被使用！");
+            throw new IllegalArgumentException("该激活链接已被使用");
         }
 
         // 3. 数据清洗 (脱敏)
@@ -141,7 +142,7 @@ public class RegisterServiceImpl implements RegisterService {
         // 2. Redis 拦截
         String redisKey = TOKEN_BLACKLIST_PREFIX + signature;
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(redisKey))) {
-            throw new IllegalArgumentException("该激活链接已被使用！请勿重复提交。");
+            throw new IllegalArgumentException("该激活链接已被使用");
         }
 
         Long existCount = userMapper.selectCount(
