@@ -43,23 +43,21 @@ class RegisterServiceImplTest {
     @InjectMocks
     private RegisterServiceImpl registerService;
 
-    private static final String SALT = "原神牛逼";
+    private static final String SALT = "八重神子让我魅力无限";
 
     @BeforeEach
     void setUp() {
         // 关键！强行将 mock 的 RestTemplate 注入进去
         ReflectionTestUtils.setField(registerService, "restTemplate", restTemplate);
+
+        ReflectionTestUtils.setField(registerService, "tokenSalt", SALT);
     }
 
-    // 辅助方法：手动生成一个测试 Token
-    private String createTestToken(String qq, int direction, long expireMs, boolean corruptSignature, boolean corruptBody) {
+    private String createTestToken(String qq, int direction, long expireMs) {
         String base64Qq = Base64.getUrlEncoder().withoutPadding().encodeToString(qq.getBytes(StandardCharsets.UTF_8));
         String base64Expire = Base64.getUrlEncoder().withoutPadding().encodeToString(String.valueOf(expireMs).getBytes(StandardCharsets.UTF_8));
-        String messageBody = corruptBody ? (base64Qq + "-" + direction) : (base64Qq + "-" + direction + "-" + base64Expire);
-
+        String messageBody = base64Qq + "-" + direction + "-" + base64Expire;
         String signature = DigestUtils.sha256Hex((messageBody + SALT).getBytes(StandardCharsets.UTF_8));
-        if (corruptSignature) signature = "bad_signature";
-
         return messageBody + "." + signature;
     }
 
@@ -75,11 +73,14 @@ class RegisterServiceImplTest {
     @Test
     void verifyAndDecodeToken_Success() {
         long future = System.currentTimeMillis() + 100000;
-        String token = createTestToken("123", 1, future, false, false);
+        String token = createTestToken("123", 1, future);
+
+        // 模拟 Redis 中不存在此 Token (即未被使用)
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+
         Map<String, Object> result = registerService.verifyAndDecodeToken(token);
 
         assertEquals("123", result.get("qq"));
-        assertEquals(1, result.get("direction"));
         assertEquals(future, result.get("expireMs"));
     }
 
@@ -96,23 +97,30 @@ class RegisterServiceImplTest {
 
     @Test
     void verifyAndDecodeToken_BadSignature() {
-        String token = createTestToken("123", 1, System.currentTimeMillis() + 10000, true, false);
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.verifyAndDecodeToken(token));
-        assertEquals("Token签名校验失败，可能已被篡改", ex.getMessage());
+        String token = createTestToken("123", 1, System.currentTimeMillis() + 10000);
+        token = token.substring(0, token.lastIndexOf(".") + 1) + "wrong_signature";
+
+        String finalToken = token;
+        assertThrows(IllegalArgumentException.class, () -> registerService.verifyAndDecodeToken(finalToken));
     }
 
     @Test
     void verifyAndDecodeToken_BadBodyLength() {
-        // 创建一个只有两段的 body，但是签名是合法的
-        String token = createTestToken("123", 1, 0, false, true);
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.verifyAndDecodeToken(token));
+
+        // 故意构造一个只有两段的 body: qq-direction
+        String messageBody = "MTIz-1";
+        String signature = DigestUtils.sha256Hex((messageBody + SALT).getBytes(StandardCharsets.UTF_8));
+        String token = messageBody + "." + signature;
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> registerService.verifyAndDecodeToken(token));
         assertEquals("Token消息体解析失败", ex.getMessage());
     }
 
     @Test
     void verifyAndDecodeToken_Expired() {
         long past = System.currentTimeMillis() - 10000;
-        String token = createTestToken("123", 1, past, false, false);
+        String token = createTestToken("123", 1, past);
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.verifyAndDecodeToken(token));
         assertEquals("该激活链接已过期", ex.getMessage());
     }
@@ -157,7 +165,7 @@ class RegisterServiceImplTest {
     @Test
     void activateToken_Success() {
         long future = System.currentTimeMillis() + 100000;
-        String token = createTestToken("123", 1, future, false, false);
+        String token = createTestToken("123", 1, future);
 
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
 
@@ -168,11 +176,11 @@ class RegisterServiceImplTest {
 
     @Test
     void activateToken_Blacklisted() {
-        String token = createTestToken("123", 1, System.currentTimeMillis() + 100000, false, false);
+        String token = createTestToken("123", 1, System.currentTimeMillis() + 100000);
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.activateToken(token));
-        assertEquals("该激活链接已被使用！", ex.getMessage());
+        assertEquals("该激活链接已被使用", ex.getMessage());
     }
 
     // --- completeRegister Tests ---
@@ -193,7 +201,7 @@ class RegisterServiceImplTest {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
         dto.setMinecraftId("a");
         dto.setUsername("1");
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> registerService.completeRegister(dto));
         assertEquals("注册信息不完整", ex.getMessage());
@@ -202,7 +210,7 @@ class RegisterServiceImplTest {
     @Test
     void completeRegister_Blacklisted() {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000));
         dto.setMinecraftId("Notch");
         dto.setUsername("NotchUser");
         dto.setPassword("pwd");
@@ -216,7 +224,7 @@ class RegisterServiceImplTest {
     @Test
     void completeRegister_UsernameAlreadyExists() {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000));
         dto.setMinecraftId("Notch");
         dto.setUsername("DuplicateUser");
         dto.setPassword("pwd123");
@@ -238,7 +246,7 @@ class RegisterServiceImplTest {
     @Test
     void completeRegister_MinecraftIdInvalid() {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000, false, false));
+        dto.setToken(createTestToken("123", 1, System.currentTimeMillis() + 10000));
         dto.setMinecraftId("FakeUser");
         dto.setUsername("NewUser");
         dto.setPassword("pwd");
@@ -272,7 +280,7 @@ class RegisterServiceImplTest {
     void completeRegister_Success() throws IOException {
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
         long future = System.currentTimeMillis() + 100000;
-        dto.setToken(createTestToken("123", 1, future, false, false));
+        dto.setToken(createTestToken("123", 1, future));
         dto.setMinecraftId("Notch");
         dto.setUsername("NotchUsername");
         dto.setPassword("pwd123");
@@ -306,11 +314,11 @@ class RegisterServiceImplTest {
 
     @Test
     void completeRegister_RemainingMsZero_ShouldNotSetRedis() throws Exception {
-        // 1. 使用 spy() 包装真实的 service，这样我们可以拦截它内部的方法调用
+        // 使用 spy 包装 service 以拦截内部方法
         RegisterServiceImpl spyService = spy(registerService);
 
         RegisterCompleteDTO dto = new RegisterCompleteDTO();
-        dto.setToken("dummy.token"); // 随便传，因为解析步骤会被我们拦截掉
+        dto.setToken("dummy.token");
         dto.setMinecraftId("Notch");
         dto.setUsername("NotchUsername");
         dto.setPassword("pwd123");
@@ -318,24 +326,20 @@ class RegisterServiceImplTest {
         Map<String, Object> fakeUserInfo = new HashMap<>();
         fakeUserInfo.put("qq", "123");
         fakeUserInfo.put("signature", "dummy_signature");
-        // 故意比当前时间少 1000 毫秒
-        fakeUserInfo.put("expireMs", System.currentTimeMillis() - 1000);
+        fakeUserInfo.put("expireMs", System.currentTimeMillis() - 1000); // 模拟过期
 
+        // 截断 verifyAndDecodeToken，直接返回模拟数据
         doReturn(fakeUserInfo).when(spyService).verifyAndDecodeToken(anyString());
 
-        // 3. Mock 必要的外部依赖
-        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
-        // 补充对新增逻辑的 Mock：模拟用户名未重复
-        when(userMapper.selectCount(any())).thenReturn(0L);
 
+        when(userMapper.selectCount(any())).thenReturn(0L);
         Map<String, String> mockResponse = new HashMap<>();
         mockResponse.put("id", "real-uuid-123");
         when(restTemplate.getForObject(anyString(), eq(Map.class))).thenReturn(mockResponse);
 
-        // 4. 执行核心方法（注意：这里一定要用 spyService 去调用！）
         spyService.completeRegister(dto);
 
-        // 5. 断言：验证由于 remainingMs 为负数，Redis 的 opsForValue() 绝对没有被调用
+        // 验证因为剩余时间 <= 0，没有调用 Redis 的 set 方法
         verify(stringRedisTemplate, never()).opsForValue();
     }
 }

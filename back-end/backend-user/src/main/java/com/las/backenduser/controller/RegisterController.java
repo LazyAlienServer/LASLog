@@ -25,7 +25,7 @@ public class RegisterController {
     @PostMapping("/generateLink")
     public Result<String> generateLink(@RequestBody GenerateLinkDTO dto) {
         if (dto.getQq() == null || dto.getDirection() == null) {
-            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), null, "QQ号和审核方向不能为空");
+            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), (String) null, "QQ号和审核方向不能为空");
         }
 
         long expireTime = System.currentTimeMillis() + 20 * 60 * 1000L;
@@ -36,30 +36,31 @@ public class RegisterController {
     }
 
     @GetMapping("/check-mc-id")
-    public Result<String> checkMinecraftId(@RequestParam String username) throws IOException {
-        if (username == null || username.trim().isEmpty()) {
-            // 强转 null 解决泛型推导问题
-            return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), (String) null, "Minecraft ID 不能为空");
-        }
+    public Result<String> checkMinecraftId(@RequestParam String username) {
+        try {
+            if (username == null || username.trim().isEmpty()) {
+                return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), (String) null, "Minecraft ID 不能为空");
+            }
 
-        String uuid = registerService.checkMinecraftId(username);
-        if (uuid != null) {
-            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), uuid, "Minecraft ID 校验通过");
-        } else {
-            // 强转 null 解决泛型推导问题
-            return ResultUtil.result(ResultEnum.NOT_FOUND.getCode(), (String) null, "Minecraft ID 不存在");
+            String uuid = registerService.checkMinecraftId(username);
+            if (uuid != null) {
+                return ResultUtil.result(ResultEnum.SUCCESS.getCode(), uuid, "Minecraft ID 校验通过");
+            } else {
+                return ResultUtil.result(ResultEnum.NOT_FOUND.getCode(), (String) null, "Minecraft ID 不存在");
+            }
+        } catch (IOException e) {
+            log.error("调用Mojang API校验异常: {}", e.getMessage(), e);
+            return ResultUtil.result(500, (String) null, "网络请求异常，请稍后再试");
         }
     }
 
     @GetMapping("/activate")
     public Result<HashMap<String, Object>> activateToken(@RequestParam String token) {
         try {
-            // 调用 Service 获取清洗后的数据
             HashMap<String, Object> returnData = registerService.activateToken(token);
-            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), returnData, "Token有效，请填写注册信息");
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), returnData, "Token有效");
         } catch (IllegalArgumentException e) {
-            // 强转 null 为 HashMap，满足 T extends Serializable 且匹配方法返回值
-            return ResultUtil.result(403, null, e.getMessage());
+            return ResultUtil.result(403, (HashMap<String, Object>) null, e.getMessage());
         }
     }
 
@@ -71,7 +72,7 @@ public class RegisterController {
         } catch (IllegalArgumentException e) {
             return ResultUtil.result(403, e.getMessage());
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("完成注册时发生异常: {}", e.getMessage(), e);
             return ResultUtil.result(500, "服务器内部错误，请稍后再试");
         }
     }
