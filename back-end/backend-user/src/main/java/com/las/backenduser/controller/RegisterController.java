@@ -28,7 +28,7 @@ public class RegisterController {
             return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), (String) null, "QQ号和审核方向不能为空");
         }
 
-        long expireTime = System.currentTimeMillis() + 20 * 60 * 1000L;
+        long expireTime = System.currentTimeMillis() + 24 *  60 * 60 * 1000L;
         String token = registerService.generateToken(dto.getQq(), dto.getDirection(), expireTime);
         String activationUrl = "https://domain.com/activate?token=" + token;
 
