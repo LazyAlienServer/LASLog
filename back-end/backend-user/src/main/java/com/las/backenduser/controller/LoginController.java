@@ -30,7 +30,7 @@ public class LoginController {
 
     @PostMapping("/kickByUuid")
     public Result<Serializable> kick(@RequestParam String userUuid){
-       return loginService.kickOutByUuid(userUuid);
+        return loginService.kickOutByUuid(userUuid);
     }
 
     @PostMapping("/kickByUserName")

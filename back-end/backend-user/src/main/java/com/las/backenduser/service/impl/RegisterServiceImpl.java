@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RegisterServiceImpl implements RegisterService {
 
-    @Value("${jwt.token-salt}")
+    @Value("${secret.jwt.token-salt}")
     private String tokenSalt;
 
     private final RestTemplate restTemplate;
@@ -78,7 +78,6 @@ public class RegisterServiceImpl implements RegisterService {
         // 2. 消息体结构校验
         String[] bodyParts = messageBody.split("-");
         if (bodyParts.length != 3) {
-            // 文案与测试用例精确对齐
             throw new IllegalArgumentException("Token消息体解析失败");
         }
 

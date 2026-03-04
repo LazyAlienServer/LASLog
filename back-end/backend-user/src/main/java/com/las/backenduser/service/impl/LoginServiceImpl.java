@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class LoginServiceImpl implements LoginService {
 
-    // --- 提取重复使用的魔法值常量，解决 java:S1192 警告 ---
     private static final String REDIS_RT_USER_PREFIX = "auth:rt:user:";
     private static final String REDIS_RT_TOKEN_PREFIX = "auth:rt:token:";
     private static final String REDIS_KICKOUT_PREFIX = "login:kickout:";
