@@ -18,6 +18,8 @@ spring:
       hibernate:
         format_sql: true
   data:
+    mongodb:
+      uri: mongodb://admin:root@lasteamcity.ddns.net:27017/admin
     redis:
       host: ${REDIS_HOST:116.233.20.28}
       port: ${REDIS_PORT:6379}
