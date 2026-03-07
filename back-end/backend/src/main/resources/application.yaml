@@ -1,6 +1,21 @@
 spring:
   application:
     name: backend
+  data:
+    mongodb:
+      auto-index-creation: true
+      uri: mongodb://admin:root@lasteamcity.ddns.net:27017/admin
+    redis:
+      host: ${REDIS_HOST:116.233.20.28}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASS:las} # 如果没有密码留空
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
 springdoc:
   swagger-ui:
     # swagger-ui.html ??
