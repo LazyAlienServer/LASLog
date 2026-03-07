@@ -5,16 +5,20 @@ import com.las.backenduser.utils.result.Result
 import com.las.backenduser.utils.result.ResultUtil
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.context.request.WebRequest
 import org.springframework.web.multipart.MultipartFile
 import java.io.Serializable
 
 @RestController
 @RequestMapping("/fileupload")
 class FileUploadController(
-    private val fileUploadService: FileUploadService
+    private val fileUploadService: FileUploadService,
+    private val redisTemplate: StringRedisTemplate
 ) {
 
     @PostMapping("/avatar", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -62,30 +66,64 @@ class FileUploadController(
     }
 
     @GetMapping("/avatar/get/{username}")
-    fun getAvatar(@PathVariable username: String): ResponseEntity<ByteArray> {
-        val file = fileUploadService.getAvatar(username)
-            ?: return ResponseEntity.notFound().build()
+    fun getAvatar(
+        @PathVariable username: String,
+        webRequest: WebRequest
+    ): ResponseEntity<out Serializable> {
 
-        // 3. 安全解析 MediaType：如果数据库里的类型非法，默认降级为通用数据流，防止崩溃
-        val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
-            .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
+        val redisEtag = redisTemplate.opsForValue()["avatar:etag:$username"]
+        if (redisEtag != null && webRequest.checkNotModified(redisEtag)) {
+            return ResponseEntity.status(304).build<Nothing>() // ✅ 修复泛型推断
+        }
 
-        return ResponseEntity.ok()
-            .contentType(mediaType)
-            .body(file.content.data)
+        return try {
+            val file = fileUploadService.getAvatar(username)
+                ?: return ResponseEntity.status(404).body(ResultUtil.result(404, "头像不存在"))
+
+            val currentEtag = redisEtag ?: file.createdTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli().toString()
+            val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
+                .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
+
+            ResponseEntity.ok()
+                .contentType(mediaType)
+                .eTag(currentEtag)
+                .body(file.content.data)
+
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(ResultUtil.result(500, "获取头像异常: ${e.message}"))
+        }
     }
 
     @GetMapping("/file/get/{id}")
-    fun getFile(@PathVariable id: String): ResponseEntity<ByteArray> {
-        val file = fileUploadService.getOrdinaryFile(id)
-            ?: return ResponseEntity.notFound().build()
+    fun getFile(
+        @PathVariable id: String,
+        webRequest: WebRequest
+    ): ResponseEntity<out Serializable> {
 
-        val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
-            .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
+        val redisEtag = redisTemplate.opsForValue()["file:etag:$id"]
+        if (redisEtag != null && webRequest.checkNotModified(redisEtag)) {
+            return ResponseEntity.status(304).build<Nothing>()
+        }
 
-        return ResponseEntity.ok()
-            .contentType(mediaType)
-            .body(file.content.data)
+        return try {
+            val file = fileUploadService.getOrdinaryFile(id)
+                ?: return ResponseEntity.status(404).body(ResultUtil.result(404, "文件不存在"))
+
+            val currentEtag = redisEtag ?: file.createdTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli().toString()
+            val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
+                .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
+
+            val disposition = "inline; filename=\"${java.net.URLEncoder.encode(file.name, "UTF-8")}\""
+
+            ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition) // 设置文件名
+                .eTag(currentEtag)
+                .body(file.content.data)
+
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(ResultUtil.result(500, "获取文件异常: ${e.message}"))
+        }
     }
 
     @GetMapping("/avatar/list")
