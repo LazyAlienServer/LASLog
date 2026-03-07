@@ -24,6 +24,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  background: transparent;
+  border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #746aebcc;
+}
+
 @media (min-width: 2160px) {
   :root {
     --base-font-size: 20px;
