@@ -11,6 +11,7 @@ import com.las.backenduser.utils.result.ResultEnum;
 import com.las.backenduser.utils.result.ResultUtil;
 import com.las.backenduser.utils.salt.Salt;
 import io.jsonwebtoken.Claims;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Log4j2
 public class LoginServiceImpl implements LoginService {
 
     private static final String REDIS_RT_USER_PREFIX = "auth:rt:user:";
@@ -181,5 +183,30 @@ public class LoginServiceImpl implements LoginService {
             return ResultUtil.result(ResultEnum.SUCCESS.getCode(), accessToken, null);
         }
         return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "refreshToken错误或过期");
+    }
+
+    /**
+     * 用户登出 (通过 Token)
+     *
+     * @param accessToken 用户当前的 Access Token
+     * @param clientId    客户端 ID
+     * @return 操作结果
+     */
+    public Result<Serializable> logoutByToken(String accessToken, String clientId) {
+        String userUuid;
+        try {
+            // 解析 Token 获取 User UUID
+            userUuid = jwtUtils.getUserUUIDFromToken(accessToken);
+        } catch (Exception e) {
+            log.warn("Logout failed: Token invalid or expired: {}", e.getMessage());
+            // 用户要求：exception都要用Result返回
+            return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "Token无效或已过期: " + e.getMessage());
+        }
+
+        if (userUuid == null) {
+             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "Token无效");
+        }
+
+        return logout(userUuid, clientId);
     }
 }

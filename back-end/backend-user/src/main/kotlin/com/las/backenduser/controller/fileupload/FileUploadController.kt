@@ -1,7 +1,11 @@
 package com.las.backenduser.controller.fileupload
 
+import com.las.backenduser.exception.UnauthorizedException
 import com.las.backenduser.service.FileUploadService
+import com.las.backenduser.service.LoginService
+import com.las.backenduser.utils.jwt.JwtUtils
 import com.las.backenduser.utils.result.Result
+import com.las.backenduser.utils.result.ResultEnum
 import com.las.backenduser.utils.result.ResultUtil
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.servlet.http.HttpServletRequest
@@ -16,30 +20,51 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.Serializable
 import java.net.URLEncoder
 
+private const val BEARER_PREFIX = "Bearer "
+private const val MSG_CREDENTIALS_EXPIRED = "凭证已失效，请重新登录"
+
+@Suppress("S1192")
 @RestController
 @RequestMapping("/fileupload")
 class FileUploadController(
     private val fileUploadService: FileUploadService,
-    private val redisTemplate: StringRedisTemplate
+    private val redisTemplate: StringRedisTemplate,
+    private val jwtUtils: JwtUtils,
+    private val loginService: LoginService
 ) {
 
     @PostMapping("/avatar", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun uploadAvatar(
-        @RequestHeader("username") username: String,
+        @Parameter(hidden = true)
+        @RequestHeader(value = "Authorization", required = false) authorization: String?,
         @RequestPart("file") files: List<MultipartFile>,
         @Parameter(hidden = true) request: HttpServletRequest
     ): Result<out Serializable> {
+
+        if (authorization.isNullOrBlank()) {
+            return ResultUtil.result(ResultEnum.UNAUTHORIZED.code, "未登录")
+        }
 
         if (files.isEmpty() || files[0].isEmpty) {
             return ResultUtil.result(400, "上传失败：请至少选择一个文件")
         }
 
         return try {
-            fileUploadService.uploadAvatar(files.toTypedArray(), username)
+            val token = if (authorization.startsWith(BEARER_PREFIX)) authorization.substring(7) else authorization
+            val claims = jwtUtils.parseToken(token)
+            val uuid = claims.subject
+
+            if (loginService.isKickedOut(uuid, claims.issuedAt)) {
+                return ResultUtil.result(ResultEnum.UNAUTHORIZED.code, MSG_CREDENTIALS_EXPIRED)
+            }
+
+            fileUploadService.uploadAvatar(files.toTypedArray(), uuid)
 
             val baseUrl = getBaseUrl(request)
-            val urls = arrayListOf("$baseUrl/avatar/get/$username")
+            val urls = arrayListOf("$baseUrl/avatar/get/$uuid")
             ResultUtil.result(200, urls, "头像上传成功")
+        } catch (e: UnauthorizedException) {
+            ResultUtil.result(401, e.message ?: "Authentication failed")
         } catch (e: Exception) {
             ResultUtil.result(500, "头像上传异常: ${e.message}")
         }
@@ -47,38 +72,73 @@ class FileUploadController(
 
     @PostMapping("/file", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun uploadFile(
-        @RequestHeader("username") username: String,
+        @Parameter(hidden = true)
+        @RequestHeader(value = "Authorization", required = false) authorization: String?,
         @RequestPart("file") files: List<MultipartFile>,
         @Parameter(hidden = true) request: HttpServletRequest
     ): Result<out Serializable> {
+
+        if (authorization.isNullOrBlank()) {
+            return ResultUtil.result(ResultEnum.UNAUTHORIZED.code, "未登录")
+        }
 
         if (files.isEmpty() || files[0].isEmpty) {
             return ResultUtil.result(400, "上传失败：请至少选择一个文件")
         }
 
         return try {
-            val savedFiles = fileUploadService.uploadOrdinaryFile(files.toTypedArray(), username)
+            val token = if (authorization.startsWith(BEARER_PREFIX)) authorization.substring(7) else authorization
+            val claims = jwtUtils.parseToken(token)
+            val uuid = claims.subject
+
+            if (loginService.isKickedOut(uuid, claims.issuedAt)) {
+                return ResultUtil.result(ResultEnum.UNAUTHORIZED.code, MSG_CREDENTIALS_EXPIRED)
+            }
+
+            val savedFiles = fileUploadService.uploadOrdinaryFile(files.toTypedArray(), uuid)
             val baseUrl = getBaseUrl(request)
             val urls = savedFiles.map { "$baseUrl/file/get/${it.id}" }
             ResultUtil.result(200, ArrayList(urls), "文件上传成功")
+        } catch (e: UnauthorizedException) {
+            ResultUtil.result(401, e.message ?: "Authentication failed")
         } catch (e: Exception) {
             ResultUtil.result(500, "文件上传异常: ${e.message}")
         }
     }
 
-    @GetMapping("/avatar/get/{username}")
+    @GetMapping("/avatar/get/{uuid}")
     fun getAvatar(
-        @PathVariable username: String,
+        @PathVariable uuid: String,
+        @Parameter(hidden = true)
+        @RequestHeader(value = "Authorization", required = false) authorization: String?,
         webRequest: WebRequest
     ): ResponseEntity<Any> {
 
-        val redisEtag = redisTemplate.opsForValue()["avatar:etag:$username"]
+        var targetUuid = uuid
+        if ("user".equals(uuid, ignoreCase = true)) {
+            if (authorization.isNullOrBlank()) {
+                 return ResponseEntity.status(401).body(ResultUtil.result(ResultEnum.UNAUTHORIZED.code, "未登录"))
+            }
+            try {
+                val token = if (authorization.startsWith(BEARER_PREFIX)) authorization.substring(7) else authorization
+                val claims = jwtUtils.parseToken(token)
+                targetUuid = claims.subject
+
+                if (loginService.isKickedOut(targetUuid, claims.issuedAt)) {
+                    return ResponseEntity.status(401).body(ResultUtil.result(ResultEnum.UNAUTHORIZED.code, MSG_CREDENTIALS_EXPIRED))
+                }
+            } catch (_: Exception) {
+                 return ResponseEntity.status(401).body(ResultUtil.result(ResultEnum.UNAUTHORIZED.code, "Token无效"))
+            }
+        }
+
+        val redisEtag = redisTemplate.opsForValue()["avatar:etag:$targetUuid"]
         if (redisEtag != null && webRequest.checkNotModified(redisEtag)) {
             return ResponseEntity.status(304).build()
         }
 
         return try {
-            val resource = fileUploadService.downloadAvatarStream(username)
+            val resource = fileUploadService.downloadAvatarStream(targetUuid)
                 ?: return ResponseEntity.status(404).body(ResultUtil.result(404, "头像不存在"))
 
             val uploadDate = resource.gridFSFile?.uploadDate?.time?.toString() ?: System.currentTimeMillis().toString()

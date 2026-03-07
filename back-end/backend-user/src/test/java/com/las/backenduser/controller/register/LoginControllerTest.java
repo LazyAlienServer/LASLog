@@ -77,7 +77,7 @@ class LoginControllerTest {
     @DisplayName("GET /login/loginByToken - 缺少Token被拦截")
     void testLoginByToken_MissingToken() throws Exception {
         mockMvc.perform(get("/login/loginByToken")
-                        .param("accessToken", "")
+                        .header("Authorization", "")
                         .param("clientId", "pc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(401)) // Unauthorized
@@ -92,7 +92,7 @@ class LoginControllerTest {
         when(loginService.loginByToken("valid_token", "pc")).thenReturn(mockResult);
 
         mockMvc.perform(get("/login/loginByToken")
-                        .param("accessToken", "Bearer valid_token")
+                        .header("Authorization", "Bearer valid_token")
                         .param("clientId", "pc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));

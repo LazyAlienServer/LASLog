@@ -10,4 +10,16 @@ import lombok.NoArgsConstructor;
 public class Password{
     private String cipherText;
     private String salt;
+
+    public String getCipherText() {
+        return cipherText;
+    }
+
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
+    }
 }

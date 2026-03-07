@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit
 
 @Service
 class FileUploadServiceImpl(
-    // 🔥 核心改动 1：引入 GridFsTemplate，专门处理大文件
     private val gridFsTemplate: GridFsTemplate,
     private val redisTemplate: StringRedisTemplate
 ) : FileUploadService {
@@ -24,19 +23,19 @@ class FileUploadServiceImpl(
     private val AVATAR_ETAG_KEY = "avatar:etag:"
     private val METADATA_TYPE = "metadata.type"
     private val METADATA_UPLOADER = "metadata.uploader"
-    override fun uploadAvatar(files: Array<MultipartFile>, username: String): List<FileUpload> {
+    override fun uploadAvatar(files: Array<MultipartFile>, uuid: String): List<FileUpload> {
         val now = System.currentTimeMillis()
 
         gridFsTemplate.delete(
             Query.query(
-                Criteria.where(METADATA_UPLOADER).`is`(username)
+                Criteria.where(METADATA_UPLOADER).`is`(uuid)
                     .and(METADATA_TYPE).`is`("avatar")
             )
         )
 
         val uploads = files.map { file ->
             val metadata = Document().apply {
-                put("uploader", username)
+                put("uploader", uuid)
                 put("type", "avatar")
                 put("contentType", file.contentType ?: APPL_OCTET)
                 put("createdTime", LocalDateTime.now())
@@ -49,18 +48,18 @@ class FileUploadServiceImpl(
                 metadata
             )
 
-            buildFileUploadResponse(fileId, file, username)
+            buildFileUploadResponse(fileId, file, uuid)
         }
 
         @Suppress("kotlin:S6518")//不要删，可以屏蔽一个弱智报错
-        redisTemplate.opsForValue().set(AVATAR_ETAG_KEY + username, now.toString(), 7, TimeUnit.DAYS)
+        redisTemplate.opsForValue().set(AVATAR_ETAG_KEY + uuid, now.toString(), 7, TimeUnit.DAYS)
         return uploads
     }
 
-    override fun uploadOrdinaryFile(files: Array<MultipartFile>, username: String): List<FileUpload> {
+    override fun uploadOrdinaryFile(files: Array<MultipartFile>, uuid: String): List<FileUpload> {
         return files.map { file ->
             val metadata = Document().apply {
-                put("uploader", username)
+                put("uploader", uuid)
                 put("type", "ordinary")
                 put("contentType", file.contentType ?: APPL_OCTET)
                 put("createdTime", LocalDateTime.now())
@@ -73,7 +72,7 @@ class FileUploadServiceImpl(
                 metadata
             )
 
-            buildFileUploadResponse(fileId, file, username)
+            buildFileUploadResponse(fileId, file, uuid)
         }
     }
 
@@ -86,10 +85,10 @@ class FileUploadServiceImpl(
         val files = gridFsTemplate.find(Query.query(Criteria.where(METADATA_TYPE).`is`("ordinary")))
         return files.map { mapGridFSFileToFileUpload(it) }.toList()
     }
-    override fun downloadAvatarStream(username: String): GridFsResource? {
+    override fun downloadAvatarStream(uuid: String): GridFsResource? {
         val gridFSFile = gridFsTemplate.findOne(
             Query.query(
-                Criteria.where(METADATA_UPLOADER).`is`(username)
+                Criteria.where(METADATA_UPLOADER).`is`(uuid)
                     .and(METADATA_TYPE).`is`("avatar")
             )
         ) ?: return null
@@ -105,14 +104,14 @@ class FileUploadServiceImpl(
         return gridFsTemplate.getResource(gridFSFile)
     }
 
-    private fun buildFileUploadResponse(fileId: ObjectId, file: MultipartFile, username: String): FileUpload {
+    private fun buildFileUploadResponse(fileId: ObjectId, file: MultipartFile, uuid: String): FileUpload {
         return FileUpload(
             id = fileId.toString(),
             name = file.originalFilename ?: "unknown",
             size = file.size,
             createdTime = LocalDateTime.now(),
             contentType = file.contentType ?: APPL_OCTET,
-            uploader = username
+            uploader = uuid
         )
     }
 

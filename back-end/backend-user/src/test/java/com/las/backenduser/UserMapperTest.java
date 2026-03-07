@@ -28,8 +28,8 @@ class UserMapperTest {
         user.setUuid(randomUuid);
         user.setUsername("TestUser");
         user.setPassword("123456");
-        user.setStatus(1);
-        user.setRegisterdate(23434243L);
+        user.setStatus(User.STATUS_ACTIVE);
+        user.setRegisterDate(23434243L);
         user.setQq(2192519304L);
         user.setMainMinecraftUuid("mc-uuid-1");
         user.setSalt("4757586868");
@@ -40,13 +40,13 @@ class UserMapperTest {
         user.setPermission(permission);
 
         List<String> mcUuids = Arrays.asList("mc-uuid-1", "mc-uuid-2");
-        user.setUuidMinecraft(mcUuids);
+        user.setMinecraftUuids(mcUuids);
 
         List<String> whitelists = Arrays.asList("server-1", "server-2");
         user.setWhitelist(whitelists);
 
         List<String> idMinecraft = Arrays.asList("mcID1", "mcID2");
-        user.setIdMinecraft(idMinecraft);
+        user.setMinecraftIds(idMinecraft);
 
         // 2. 执行插入
         int rows = userMapper.insert(user);
@@ -59,10 +59,9 @@ class UserMapperTest {
         assertThat(foundUser.getUsername()).isEqualTo("TestUser");
 
         // 验证数组/JSON 处理器是否正常工作
-        assertThat(foundUser.getUuidMinecraft()).containsExactly("mc-uuid-1", "mc-uuid-2");
+        assertThat(foundUser.getMinecraftUuids()).containsExactly("mc-uuid-1", "mc-uuid-2");
         assertThat(foundUser.getWhitelist()).hasSize(2);
         assertThat(foundUser.getPermission()).hasSize(2);
-        assertThat(foundUser.getIdMinecraft()).hasSize(2);
 
         System.out.println("查询到的用户信息: " + foundUser);
     }

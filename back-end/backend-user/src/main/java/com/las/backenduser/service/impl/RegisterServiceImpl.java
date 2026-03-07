@@ -176,17 +176,17 @@ public class RegisterServiceImpl implements RegisterService {
         user.setQq(Long.valueOf(qq));
         user.setUsername(dto.getUsername());
         user.setMainMinecraftUuid(uuid);
-        user.setIdMinecraft(Collections.singletonList(dto.getMinecraftId()));
-        user.setUuidMinecraft(Collections.singletonList(uuid));
+        user.setMinecraftIds(Collections.singletonList(dto.getMinecraftId()));
+        user.setMinecraftUuids(Collections.singletonList(uuid));
         user.setUuid(UUID.randomUUID().toString());
         user.setSalt(securePassword.getSalt());
         user.setPassword(securePassword.getCipherText());
 
         // 使用标准的绝对时间戳
-        user.setRegisterdate(System.currentTimeMillis());
+        user.setRegisterDate(System.currentTimeMillis());
         user.setPermission(Collections.singletonList("TEST"));
         user.setWhitelist(Collections.singletonList("TEST"));
-        user.setStatus(1);
+        user.setStatus(User.STATUS_ACTIVE);
 
         // 插入数据库
         userMapper.insert(user);

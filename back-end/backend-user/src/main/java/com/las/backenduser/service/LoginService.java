@@ -18,4 +18,11 @@ public interface LoginService {
 
     Result<Serializable> loginByToken(String token, String clientId);
 
+    Result<Serializable> logoutByToken(String token, String clientId);
+
+    Result<Serializable> refreshToken(String refreshToken, String clientId);
+
+    Result<Serializable> kickOutByUuid(String uuid);
+
+    boolean isKickedOut(String uuid, java.util.Date date);
 }

@@ -6,6 +6,7 @@ import com.las.backenduser.service.impl.LoginServiceImpl;
 import com.las.backenduser.utils.result.Result;
 import com.las.backenduser.utils.result.ResultEnum;
 import com.las.backenduser.utils.result.ResultUtil;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,13 +40,26 @@ public class LoginController {
     }
 
     @PostMapping("/logout")
-    public Result<Serializable> logout(@RequestParam String userUuid, @RequestParam String clientId){
-        return loginService.logout(userUuid, clientId);
+    public Result<Serializable> logout(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
+            @RequestParam String clientId) {
+
+        if (accessToken == null || accessToken.trim().isEmpty()) {
+            return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "未登录，无需登出");
+        }
+
+        if (accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.substring(7);
+        }
+
+        return loginService.logoutByToken(accessToken, clientId);
     }
 
     @GetMapping("/loginByToken")
     public Result<Serializable> loginByToken(
-            @RequestParam String accessToken,
+            @Parameter(hidden = true)
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
             @RequestParam String clientId) {
         if (accessToken == null || accessToken.trim().isEmpty()){
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(),"未提供 AccessToken");
