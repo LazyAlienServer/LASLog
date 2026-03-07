@@ -6,7 +6,7 @@ spring:
   application:
     name: backend-user
   datasource:
-    url: jdbc:postgresql://${DB_HOST:116.233.20.28}:${DB_PORT:5432}/${DB_NAME:postgres}
+    url: jdbc:postgresql://${DB_HOST:lasteamcity.ddns.net}:${DB_PORT:5432}/${DB_NAME:postgres}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:Gp9#q2Wz!mR6*xK4}
     driver-class-name: org.postgresql.Driver
@@ -26,7 +26,7 @@ spring:
       auto-index-creation: true
       uri: mongodb://admin:root@lasteamcity.ddns.net:27017/admin
     redis:
-      host: ${REDIS_HOST:116.233.20.28}
+      host: ${REDIS_HOST:lasteamcity.ddns.net}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASS:las} # 如果没有密码留空
       database: 0
