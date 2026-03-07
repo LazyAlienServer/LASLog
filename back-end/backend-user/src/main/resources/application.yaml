@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 500MB      # 单个文件允许的最大大小
+      max-request-size: 2048MB   # 单次请求允许的最大大小
   application:
     name: backend-user
   datasource:
@@ -19,6 +23,7 @@ spring:
         format_sql: true
   data:
     mongodb:
+      auto-index-creation: true
       uri: mongodb://admin:root@lasteamcity.ddns.net:27017/admin
     redis:
       host: ${REDIS_HOST:116.233.20.28}

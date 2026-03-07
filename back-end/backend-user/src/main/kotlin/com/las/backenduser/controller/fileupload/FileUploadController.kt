@@ -5,6 +5,7 @@ import com.las.backenduser.utils.result.Result
 import com.las.backenduser.utils.result.ResultUtil
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.core.io.InputStreamResource
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.multipart.MultipartFile
 import java.io.Serializable
+import java.net.URLEncoder
 
 @RestController
 @RequestMapping("/fileupload")
@@ -28,7 +30,6 @@ class FileUploadController(
         @Parameter(hidden = true) request: HttpServletRequest
     ): Result<out Serializable> {
 
-        // 校验逻辑 (List 的用法与 Array 一致)
         if (files.isEmpty() || files[0].isEmpty) {
             return ResultUtil.result(400, "上传失败：请至少选择一个文件")
         }
@@ -69,25 +70,27 @@ class FileUploadController(
     fun getAvatar(
         @PathVariable username: String,
         webRequest: WebRequest
-    ): ResponseEntity<out Serializable> {
+    ): ResponseEntity<Any> {
 
         val redisEtag = redisTemplate.opsForValue()["avatar:etag:$username"]
         if (redisEtag != null && webRequest.checkNotModified(redisEtag)) {
-            return ResponseEntity.status(304).build<Nothing>() // ✅ 修复泛型推断
+            return ResponseEntity.status(304).build()
         }
 
         return try {
-            val file = fileUploadService.getAvatar(username)
+            val resource = fileUploadService.downloadAvatarStream(username)
                 ?: return ResponseEntity.status(404).body(ResultUtil.result(404, "头像不存在"))
 
-            val currentEtag = redisEtag ?: file.createdTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli().toString()
-            val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
+            val uploadDate = resource.gridFSFile?.uploadDate?.time?.toString() ?: System.currentTimeMillis().toString()
+            val currentEtag = redisEtag ?: uploadDate
+
+            val mediaType = runCatching { MediaType.parseMediaType(resource.contentType) }
                 .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
 
             ResponseEntity.ok()
                 .contentType(mediaType)
                 .eTag(currentEtag)
-                .body(file.content.data)
+                .body(InputStreamResource(resource.inputStream))
 
         } catch (e: Exception) {
             ResponseEntity.status(500).body(ResultUtil.result(500, "获取头像异常: ${e.message}"))
@@ -98,28 +101,30 @@ class FileUploadController(
     fun getFile(
         @PathVariable id: String,
         webRequest: WebRequest
-    ): ResponseEntity<out Serializable> {
-
+    ): ResponseEntity<Any> {
         val redisEtag = redisTemplate.opsForValue()["file:etag:$id"]
         if (redisEtag != null && webRequest.checkNotModified(redisEtag)) {
-            return ResponseEntity.status(304).build<Nothing>()
+            return ResponseEntity.status(304).build()
         }
 
         return try {
-            val file = fileUploadService.getOrdinaryFile(id)
+            val resource = fileUploadService.downloadOrdinaryFileStream(id)
                 ?: return ResponseEntity.status(404).body(ResultUtil.result(404, "文件不存在"))
 
-            val currentEtag = redisEtag ?: file.createdTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli().toString()
-            val mediaType = runCatching { MediaType.parseMediaType(file.contentType) }
+            val uploadDate = resource.gridFSFile?.uploadDate?.time?.toString() ?: System.currentTimeMillis().toString()
+            val currentEtag = redisEtag ?: uploadDate
+
+            val mediaType = runCatching { MediaType.parseMediaType(resource.contentType) }
                 .getOrDefault(MediaType.APPLICATION_OCTET_STREAM)
 
-            val disposition = "inline; filename=\"${java.net.URLEncoder.encode(file.name, "UTF-8")}\""
+            val fileName = resource.filename ?: "unknown_file"
+            val disposition = "inline; filename=\"${URLEncoder.encode(fileName, "UTF-8").replace("+", "%20")}\""
 
             ResponseEntity.ok()
                 .contentType(mediaType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition) // 设置文件名
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
                 .eTag(currentEtag)
-                .body(file.content.data)
+                .body(InputStreamResource(resource.inputStream)) // 🔥 流式输出
 
         } catch (e: Exception) {
             ResponseEntity.status(500).body(ResultUtil.result(500, "获取文件异常: ${e.message}"))
