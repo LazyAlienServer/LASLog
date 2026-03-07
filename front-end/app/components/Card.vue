@@ -42,7 +42,7 @@ const iconClass = computed(() => {
   width: 100%;
   height: min-content;
   border-radius: 20px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   justify-items: center;
   overflow: hidden;
 
@@ -63,7 +63,7 @@ const iconClass = computed(() => {
 #content {
   width: 100%;
   box-sizing: border-box;
-  padding: clamp(12px, 2.5vw, 20px) clamp(10px, 2vw, 16px);
+  padding: 1.4rem 2rem;
   display: flex;
   flex-direction: column;
 }
@@ -90,7 +90,7 @@ const iconClass = computed(() => {
 }
 
 #title .title_text {
-  font-size: 1rem;
+  font-size: 1.1rem;
   letter-spacing: 0.05rem;
   font-weight: 700;
   text-wrap-mode: nowrap;
