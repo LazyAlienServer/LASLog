@@ -6,9 +6,9 @@ const props = withDefaults(defineProps<{
   rowGap?: string
 }>(), {
   left: '55vw',
-  right: 'auto',
-  gap: '40px',
-  rowGap: '2rem',
+  right: '31vw',
+  gap: '2vw',
+  rowGap: 'max(1.5rem,2vw)',
 })
 </script>
 
@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<{
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     flex-direction: column;
     justify-content: start;
     gap: var(--rowGap) !important;
@@ -37,7 +37,7 @@ const props = withDefaults(defineProps<{
 
 .left,
 .right {
-  @media (max-width: 900px) {
+  @media (max-width: 1000px) {
     width: auto !important;
   }
 }
