@@ -1,0 +1,10 @@
+<svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Head outline -->
+  <rect x="4.25" y="3.75" width="17.5" height="18.5" rx="1.5" stroke="#808080" stroke-width="1.05" fill="none"/>
+  <!-- Left eye -->
+  <rect x="7.2" y="8" width="3.6" height="3.6" rx="0.3" stroke="#808080" stroke-width="1.05" fill="none"/>
+  <!-- Right eye -->
+  <rect x="15.2" y="8" width="3.6" height="3.6" rx="0.3" stroke="#808080" stroke-width="1.05" fill="none"/>
+  <!-- Mouth: 4 columns, outer two slightly narrower -->
+  <path d="M8.8 13.4H10.8V11.6H15.2V13.4H17.2V19.4H15.2V17.6H10.8V19.4H8.8Z" stroke="#808080" stroke-width="1.05" stroke-linejoin="miter" fill="none"/>
+</svg>
