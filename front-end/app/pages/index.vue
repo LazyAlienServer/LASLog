@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const logoSrc = '/img/logo.svg'
+
 definePageMeta({
   layout: 'background-home',
 })
@@ -23,7 +25,7 @@ definePageMeta({
         <h3>Lazy Alien Server 的服务器交流平台，集成白名单管理、作品归档、插件管理、信息交流等功能</h3>
       </div>
       <div class="right-container">
-        <img :src="'/img/logo.svg'" alt="LAS LOG Logo">
+        <img :src="logoSrc" alt="LAS LOG Logo">
       </div>
     </div>
     <div class="footer-container">
