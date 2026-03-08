@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       '/api/**': {
-        proxy: `${process.env.API_BASE_URL || 'http://127.0.0.1:8081'}/**`,
+        proxy: `${process.env.API_BASE_URL || 'http://lasteamcity.ddns.net:8081'}/**`,
       },
     },
   },
@@ -20,7 +20,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: process.env.API_BASE_URL || 'http://127.0.0.1:8081',
+          target: process.env.API_BASE_URL || 'http://lasteamcity.ddns.net:8081',
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ''),
         },

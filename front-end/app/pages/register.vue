@@ -563,7 +563,8 @@ $gradient-button: linear-gradient(125.94deg, #e0d1eb 4.86%, #e2b8ff 93.29%);
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 1px;
+  height: 2px;
+  transform: scaleY(0.5);
   background: $gradient-title;
 }
 
