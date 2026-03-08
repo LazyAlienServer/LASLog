@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+
+import LoginPage from '../../app/pages/login.vue'
 
 // ─── Mocks ───
 vi.stubGlobal('definePageMeta', vi.fn())
@@ -45,8 +47,6 @@ const NuxtImgStub = defineComponent({
   },
 })
 
-import LoginPage from '../../app/pages/login.vue'
-
 const stubs = {
   UInput: UInputStub,
   UButton: UButtonStub,
@@ -85,7 +85,7 @@ describe('login.vue', () => {
     const wrapper = createWrapper()
     const inputs = wrapper.findAll('input')
     const usernameInput = inputs.find(
-      (i) => (i.element as HTMLInputElement).placeholder === '用户名',
+      i => (i.element as HTMLInputElement).placeholder === '用户名',
     )
     expect(usernameInput).toBeTruthy()
   })
@@ -94,7 +94,7 @@ describe('login.vue', () => {
     const wrapper = createWrapper()
     const inputs = wrapper.findAll('input')
     const passwordInput = inputs.find(
-      (i) => (i.element as HTMLInputElement).placeholder === '密码',
+      i => (i.element as HTMLInputElement).placeholder === '密码',
     )
     expect(passwordInput).toBeTruthy()
   })
@@ -103,7 +103,7 @@ describe('login.vue', () => {
     const wrapper = createWrapper()
     const inputs = wrapper.findAll('input')
     const passwordInput = inputs.find(
-      (i) => (i.element as HTMLInputElement).placeholder === '密码',
+      i => (i.element as HTMLInputElement).placeholder === '密码',
     )
     expect(passwordInput?.attributes('type')).toBe('password')
   })
@@ -112,7 +112,7 @@ describe('login.vue', () => {
     const wrapper = createWrapper()
     const inputs = wrapper.findAll('input')
     const usernameInput = inputs.find(
-      (i) => (i.element as HTMLInputElement).placeholder === '用户名',
+      i => (i.element as HTMLInputElement).placeholder === '用户名',
     )
     expect(usernameInput?.attributes('type')).toBe('text')
   })
@@ -155,4 +155,3 @@ describe('login.vue', () => {
     expect(root.classes()).toContain('justify-center')
   })
 })
-

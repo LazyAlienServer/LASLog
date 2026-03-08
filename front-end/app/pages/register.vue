@@ -36,7 +36,7 @@ onMounted(async () => {
     return
   }
 
-  try{
+  try {
     const res = await $fetch<{ code: number, data: { qq: string, direction: number }, msg: string }>(
       `/api/register/activate`,
       { params: { token: token.value } },
@@ -59,7 +59,8 @@ onMounted(async () => {
 
 // 防抖校验 Minecraft ID
 watch(minecraftId, (val) => {
-  if (mcIdCheckTimer) clearTimeout(mcIdCheckTimer)
+  if (mcIdCheckTimer)
+    clearTimeout(mcIdCheckTimer)
   formError.value = ''
 
   if (!val.trim()) {
@@ -94,13 +95,20 @@ watch(minecraftId, (val) => {
 })
 
 function validateForm(): string | null {
-  if (!username.value.trim()) return '请输入用户名'
-  if (!minecraftId.value.trim()) return '请输入正版 Minecraft ID'
-  if (mcIdStatus.value === 'checking') return 'Minecraft ID 正在校验中，请稍候'
-  if (mcIdStatus.value === 'invalid') return 'Minecraft ID 无效，请检查后重试'
-  if (!password.value) return '请输入密码'
-  if (password.value.length < 6) return '密码长度不能少于6位'
-  if (password.value !== confirmPassword.value) return '两次输入的密码不一致'
+  if (!username.value.trim())
+    return '请输入用户名'
+  if (!minecraftId.value.trim())
+    return '请输入正版 Minecraft ID'
+  if (mcIdStatus.value === 'checking')
+    return 'Minecraft ID 正在校验中，请稍候'
+  if (mcIdStatus.value === 'invalid')
+    return 'Minecraft ID 无效，请检查后重试'
+  if (!password.value)
+    return '请输入密码'
+  if (password.value.length < 6)
+    return '密码长度不能少于6位'
+  if (password.value !== confirmPassword.value)
+    return '两次输入的密码不一致'
   return null
 }
 
@@ -176,18 +184,18 @@ async function handleRegister() {
               placeholder="用户名"
               :autofocus="true"
               :ui="{ root: 'relative input_wrapper w-full',
-                    base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
-                    leadingIcon: 'size-[25px] left-[7px]' }"
+                     base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
+                     leadingIcon: 'size-[25px] left-[7px]' }"
             />
             <div class="relative w-full">
               <UInput
-              v-model="minecraftId"
-              type="text"
-              icon="i-custom-register-minecraft"
-              placeholder="正版 Minecraft ID"
+                v-model="minecraftId"
+                type="text"
+                icon="i-custom-register-minecraft"
+                placeholder="正版 Minecraft ID"
                 :ui="{ root: 'relative input_wrapper w-full',
-                      base: 'ps-[51px] pe-[30px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
-                      leadingIcon: 'size-[25px] left-[7px]' }"
+                       base: 'ps-[51px] pe-[30px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
+                       leadingIcon: 'size-[25px] left-[7px]' }"
               />
               <span v-if="mcIdStatus === 'valid'" class="mc-id-icon">
                 <img src="/img/check-icon.svg" alt="valid" width="23" height="23">
@@ -205,8 +213,8 @@ async function handleRegister() {
               icon="i-custom-login-password"
               placeholder="密码"
               :ui="{ root: 'relative input_wrapper w-full',
-                    base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
-                    leadingIcon: 'size-[25px] left-[7px]' }"
+                     base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
+                     leadingIcon: 'size-[25px] left-[7px]' }"
             />
             <UInput
               v-model="confirmPassword"
@@ -214,8 +222,8 @@ async function handleRegister() {
               icon="i-custom-login-password"
               placeholder="确认密码"
               :ui="{ root: 'relative input_wrapper w-full',
-                    base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
-                    leadingIcon: 'size-[25px] left-[7px]' }"
+                     base: 'ps-[51px] bg-transparent font-light text-lg ring-0 focus-visible:ring-0',
+                     leadingIcon: 'size-[25px] left-[7px]' }"
             />
           </div>
           <p v-if="formError" class="form-message text-red-400">

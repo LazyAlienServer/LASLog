@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+
 import StateTag from '../../../app/components/user/stateTag.vue'
 
 function createWrapper(props: { tag: string, state?: string, stateColor?: string }) {
@@ -37,9 +38,8 @@ describe('stateTag.vue', () => {
   it('does not set color when stateColor is not provided', () => {
     const wrapper = createWrapper({ tag: '白名单', state: '通过' })
     const stateEl = wrapper.find('.state')
-    // Should not have inline color style or have undefined
-    const style = stateEl.attributes('style') || ''
-    expect(style).not.toContain('color:')
+    const style = stateEl.attributes('style')
+    expect(style === undefined || !style.includes('color:')).toBe(true)
   })
 
   it('renders both state and name spans inside .tag', () => {
@@ -67,9 +67,7 @@ describe('stateTag.vue', () => {
   it('renders tag and state in correct order', () => {
     const wrapper = createWrapper({ tag: '归档', state: '完成' })
     const spans = wrapper.findAll('span')
-    expect(spans[0]!.classes()).toContain('state')
-    expect(spans[1]!.classes()).toContain('name')
+    expect(spans[0].classes()).toContain('state')
+    expect(spans[1].classes()).toContain('name')
   })
 })
-
-

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+
 import BackgroundHome from '../../app/layouts/background-home.vue'
 
 describe('background-home.vue', () => {
@@ -26,9 +27,7 @@ describe('background-home.vue', () => {
       slots: { default: '<p class="test-slot">Content</p>' },
     })
     const bgColor = wrapper.find('.bg-color')
-    const children = bgColor.element.children
-    expect(children[children.length - 1]!.classList.contains('background')).toBe(true)
+    const lastChild = bgColor.element.children[bgColor.element.children.length - 1]
+    expect(lastChild?.classList.contains('background')).toBe(true)
   })
 })
-
-

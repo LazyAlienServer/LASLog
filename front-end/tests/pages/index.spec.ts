@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+
+import IndexPage from '../../app/pages/index.vue'
 
 // ─── Mocks ───
 vi.stubGlobal('definePageMeta', vi.fn())
@@ -13,8 +15,6 @@ const NuxtLinkStub = defineComponent({
     return () => h('a', { href: props.to, id: props.id }, slots.default?.())
   },
 })
-
-import IndexPage from '../../app/pages/index.vue'
 
 const stubs = {
   NuxtLink: NuxtLinkStub,
@@ -78,7 +78,7 @@ describe('index.vue', () => {
   it('renders tags with correct text', () => {
     const wrapper = createWrapper()
     const tags = wrapper.findAll('.tag')
-    const texts = tags.map((t) => t.text())
+    const texts = tags.map(t => t.text())
     expect(texts).toContain('交流')
     expect(texts).toContain('分享')
     expect(texts).toContain('资料')
@@ -88,7 +88,7 @@ describe('index.vue', () => {
   it('tags have correct background colors', () => {
     const wrapper = createWrapper()
     const tags = wrapper.findAll('.tag')
-    const colors = tags.map((t) => (t.element as HTMLElement).style.backgroundColor)
+    const colors = tags.map(t => (t.element as HTMLElement).style.backgroundColor)
     expect(colors).toEqual(['#A263CF', '#9774DA', '#8C84E5', '#8194F0'])
   })
 
@@ -135,5 +135,3 @@ describe('index.vue', () => {
     expect(wrapper.find('.tag-container').exists()).toBe(true)
   })
 })
-
-

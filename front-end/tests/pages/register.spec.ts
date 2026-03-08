@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
-import { computed, defineComponent, h, onMounted, ref, watch, nextTick } from 'vue'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
+
+import RegisterPage from '../../app/pages/register.vue'
 
 // ─── Mocks (must be set up before importing the component) ───
 
@@ -46,7 +48,7 @@ const UButtonStub = defineComponent({
     return () =>
       h(
         'button',
-        { disabled: props.disabled || undefined, onClick: () => emit('click') },
+        { disabled: props.disabled === true ? true : undefined, onClick: () => emit('click') },
         slots.default?.(),
       )
   },
@@ -56,7 +58,7 @@ const UIconStub = defineComponent({
   name: 'UIcon',
   props: ['name'],
   setup(props) {
-    return () => h('span', { class: 'u-icon' }, props.name)
+    return () => h('span', { class: 'u-icon' }, props.name as string)
   },
 })
 
@@ -67,9 +69,6 @@ const NuxtImgStub = defineComponent({
     return () => h('img', { src: props.src, alt: props.alt })
   },
 })
-
-// ─── Import component under test ───
-import RegisterPage from '../../app/pages/register.vue'
 
 // ─── Helpers ───
 
@@ -85,7 +84,7 @@ function createWrapper() {
 }
 
 async function setInput(wrapper: ReturnType<typeof mount>, index: number, value: string) {
-  const input = wrapper.findAll('input')[index]!
+  const input = wrapper.findAll('input')[index]
   ;(input.element as HTMLInputElement).value = value
   await input.trigger('input')
 }
@@ -171,7 +170,7 @@ describe('register.vue', () => {
       expect(wrapper.text()).toContain('其他')
     })
 
-    it('maps unknown direction to "未知"', async () => {
+    it('maps direction=99 to "未知"', async () => {
       mockRouteQuery.value = { token: 't' }
       mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: 'q', direction: 99 }, msg: '' })
       const wrapper = createWrapper()
@@ -243,7 +242,7 @@ describe('register.vue', () => {
 
   // ── 2. Minecraft ID debounce validation ──
 
-  describe('Minecraft ID debounce validation', () => {
+  describe('minecraft ID debounce validation', () => {
     async function setupForm() {
       mockRouteQuery.value = { token: 'ok' }
       mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '111', direction: 0 }, msg: '' })
@@ -256,7 +255,6 @@ describe('register.vue', () => {
       const wrapper = await setupForm()
       await setInput(wrapper, 1, 'Steve')
       await nextTick()
-      // Checking state shows spinner icon, not valid/invalid
       const checkingIcon = wrapper.find('.mc-id-icon .u-icon')
       expect(checkingIcon.exists()).toBe(true)
       expect(wrapper.find('img[alt="valid"]').exists()).toBe(false)
@@ -269,12 +267,10 @@ describe('register.vue', () => {
 
       await setInput(wrapper, 1, 'Steve')
       await nextTick()
-      // Currently checking
       expect(wrapper.find('.mc-id-icon .u-icon').exists()).toBe(true)
 
       vi.advanceTimersByTime(600)
       await flushPromises()
-      // Now valid - spinner gone, check icon shown
       expect(wrapper.find('.mc-id-icon .u-icon').exists()).toBe(false)
       expect(wrapper.find('img[alt="valid"]').exists()).toBe(true)
     })
@@ -285,12 +281,10 @@ describe('register.vue', () => {
 
       await setInput(wrapper, 1, 'Bad')
       await nextTick()
-      // Currently checking
       expect(wrapper.find('.mc-id-icon .u-icon').exists()).toBe(true)
 
       vi.advanceTimersByTime(600)
       await flushPromises()
-      // Now invalid - spinner gone, info icon shown
       expect(wrapper.find('.mc-id-icon .u-icon').exists()).toBe(false)
       expect(wrapper.find('img[alt="invalid"]').exists()).toBe(true)
     })
@@ -384,9 +378,9 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter((c) => c[0] === '/api/register/check-mc-id')
+      const mcCalls = mockFetch.mock.calls.filter(c => c[0] === '/api/register/check-mc-id') as [string, { params: { username: string } }][]
       expect(mcCalls).toHaveLength(1)
-      expect(mcCalls[0]![1].params.username).toBe('Steve')
+      expect(mcCalls[0][1].params.username).toBe('Steve')
     })
 
     it('trims the MC ID before calling API', async () => {
@@ -398,19 +392,17 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter((c) => c[0] === '/api/register/check-mc-id')
-      expect(mcCalls[0]![1].params.username).toBe('Steve')
+      const mcCalls = mockFetch.mock.calls.filter(c => c[0] === '/api/register/check-mc-id') as [string, { params: { username: string } }][]
+      expect(mcCalls[0][1].params.username).toBe('Steve')
     })
 
     it('clears formError when MC ID changes', async () => {
       const wrapper = await setupForm()
 
-      // Trigger formError by submitting empty form
       await wrapper.find('button').trigger('click')
       await nextTick()
       expect(wrapper.text()).toContain('请输入用户名')
 
-      // Changing MC ID clears formError
       await setInput(wrapper, 1, 'x')
       await nextTick()
 
@@ -591,9 +583,9 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find((c) => c[0] === '/api/register/complete')
+      const regCall = mockFetch.mock.calls.find(c => c[0] === '/api/register/complete') as [string, { method: string, body: Record<string, string> }] | undefined
       expect(regCall).toBeTruthy()
-      expect(regCall![1]).toEqual({
+      expect(regCall?.[1]).toEqual({
         method: 'POST',
         body: {
           token: 'tok123',
@@ -668,7 +660,7 @@ describe('register.vue', () => {
 
     it('disables button while submitting', async () => {
       const wrapper = await setupValidForm()
-      mockFetch.mockReturnValueOnce(new Promise(() => {})) // never resolves
+      mockFetch.mockReturnValueOnce(new Promise(() => {}))
 
       await wrapper.find('button').trigger('click')
       await nextTick()
@@ -744,15 +736,15 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find((c) => c[0] === '/api/register/complete')
-      expect(regCall![1].body.username).toBe('spacedUser')
-      expect(regCall![1].body.minecraftId).toBe('Steve')
+      const regCall = mockFetch.mock.calls.find(c => c[0] === '/api/register/complete') as [string, { body: { username: string, minecraftId: string } }] | undefined
+      expect(regCall?.[1].body.username).toBe('spacedUser')
+      expect(regCall?.[1].body.minecraftId).toBe('Steve')
     })
   })
 
   // ── 5. UI rendering ──
 
-  describe('UI rendering', () => {
+  describe('uI rendering', () => {
     it('renders register card with illustration', async () => {
       mockRouteQuery.value = { token: 't' }
       mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '1', direction: 0 }, msg: '' })
@@ -891,4 +883,3 @@ describe('register.vue', () => {
     })
   })
 })
-

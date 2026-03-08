@@ -23,7 +23,7 @@ export default withNuxt(
       parserOptions: {
         projectService: {
           // 不写 '*.ts'，避开了和 nuxt.config.ts 的冲突
-          allowDefaultProject: ['vitest.config.ts', '*.js'],
+          allowDefaultProject: ['*.js'],
         },
       },
     },
