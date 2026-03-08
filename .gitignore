@@ -126,3 +126,5 @@ fabric.properties
 /.idea/
 /LASLog.iml
 /front-end/pacts/
+/LASLog.iml
+/.idea/
