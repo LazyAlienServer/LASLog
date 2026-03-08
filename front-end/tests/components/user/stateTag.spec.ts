@@ -1,5 +1,5 @@
+import { expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
 
 import StateTag from '../../../app/components/user/stateTag.vue'
 
@@ -39,7 +39,7 @@ describe('stateTag.vue', () => {
     const wrapper = createWrapper({ tag: '白名单', state: '通过' })
     const stateEl = wrapper.find('.state')
     const style = stateEl.attributes('style')
-    expect(style === undefined || !style.includes('color:')).toBe(true)
+    expect(style == null || !style.includes('color:')).toBe(true)
   })
 
   it('renders both state and name spans inside .tag', () => {

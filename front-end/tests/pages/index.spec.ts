@@ -1,13 +1,13 @@
+import { expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
-
-import IndexPage from '../../app/pages/index.vue'
 
 // ─── Mocks ───
 vi.stubGlobal('definePageMeta', vi.fn())
 
 // ─── Component stubs ───
+import IndexPage from '../../app/pages/index.vue'
+
 const NuxtLinkStub = defineComponent({
   name: 'NuxtLink',
   props: ['to', 'id'],

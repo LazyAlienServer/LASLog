@@ -1,13 +1,13 @@
+import { expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
-
-import LoginPage from '../../app/pages/login.vue'
 
 // ─── Mocks ───
 vi.stubGlobal('definePageMeta', vi.fn())
 
 // ─── Component stubs ───
+import LoginPage from '../../app/pages/login.vue'
+
 const UInputStub = defineComponent({
   name: 'UInput',
   props: ['modelValue', 'type', 'icon', 'placeholder', 'autofocus', 'ui'],

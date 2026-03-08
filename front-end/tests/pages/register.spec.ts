@@ -1,8 +1,6 @@
-import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
-
-import RegisterPage from '../../app/pages/register.vue'
 
 // ─── Mocks (must be set up before importing the component) ───
 
@@ -24,6 +22,7 @@ const mockRouteQuery = ref<Record<string, string>>({})
 vi.stubGlobal('useRoute', () => ({ query: mockRouteQuery.value }))
 
 // ─── Component stubs ───
+import RegisterPage from '../../app/pages/register.vue'
 
 const UInputStub = defineComponent({
   name: 'UInput',
@@ -80,7 +79,12 @@ const stubs = {
 }
 
 function createWrapper() {
-  return mount(RegisterPage, { global: { stubs } })
+  return mount(RegisterPage, {
+    global: {
+      stubs,
+      mocks: { navigateTo: mockNavigateTo },
+    },
+  })
 }
 
 async function setInput(wrapper: ReturnType<typeof mount>, index: number, value: string) {
@@ -378,7 +382,9 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter(c => c[0] === '/api/register/check-mc-id') as [string, { params: { username: string } }][]
+      const mcCalls = mockFetch.mock.calls.filter(
+        (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
+      ) as [string, { params: { username: string } }][]
       expect(mcCalls).toHaveLength(1)
       expect(mcCalls[0][1].params.username).toBe('Steve')
     })
@@ -392,7 +398,9 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter(c => c[0] === '/api/register/check-mc-id') as [string, { params: { username: string } }][]
+      const mcCalls = mockFetch.mock.calls.filter(
+        (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
+      ) as [string, { params: { username: string } }][]
       expect(mcCalls[0][1].params.username).toBe('Steve')
     })
 
@@ -583,7 +591,9 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find(c => c[0] === '/api/register/complete') as [string, { method: string, body: Record<string, string> }] | undefined
+      const regCall = mockFetch.mock.calls.find(
+        (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
+      ) as [string, { method: string, body: Record<string, string> }] | undefined
       expect(regCall).toBeTruthy()
       expect(regCall?.[1]).toEqual({
         method: 'POST',
@@ -596,34 +606,48 @@ describe('register.vue', () => {
       })
     })
 
-    it('shows success message on 200 response', async () => {
+    it('shows success animation on 200 response', async () => {
       const wrapper = await setupValidForm()
       mockFetch.mockResolvedValueOnce({ code: 200, msg: '注册成功！' })
 
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      expect(wrapper.text()).toContain('注册成功！')
+      expect(wrapper.find('.success-container').exists()).toBe(true)
+      expect(wrapper.find('.success-svg').exists()).toBe(true)
     })
 
-    it('shows default success message when API msg is empty', async () => {
+    it('shows success text after animation delay', async () => {
       const wrapper = await setupValidForm()
       mockFetch.mockResolvedValueOnce({ code: 200, msg: '' })
 
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      expect(wrapper.text()).toContain('注册成功！即将跳转登录页...')
+      // Text not visible yet
+      expect(wrapper.find('.success-info').classes()).not.toContain('show')
+
+      // Advance to show text phase
+      vi.advanceTimersByTime(2500)
+      await nextTick()
+      expect(wrapper.find('.success-info').classes()).toContain('show')
+      expect(wrapper.text()).toContain('您的账号已注册完成')
     })
 
-    it('navigates to /login after successful registration', async () => {
+    it('navigates to /login via button click after success', async () => {
       const wrapper = await setupValidForm()
       mockFetch.mockResolvedValueOnce({ code: 200, msg: '成功' })
 
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      vi.advanceTimersByTime(500)
+      // Show login button
+      vi.advanceTimersByTime(3000)
+      await nextTick()
+
+      const loginBtn = wrapper.find('.success-login-btn')
+      expect(loginBtn.exists()).toBe(true)
+      await loginBtn.trigger('click')
       expect(mockNavigateTo).toHaveBeenCalledWith('/login')
     })
 
@@ -702,19 +726,16 @@ describe('register.vue', () => {
       expect(wrapper.text()).not.toContain('旧错误')
     })
 
-    it('clears previous success on new submission', async () => {
+    it('replaces form with success animation on successful submission', async () => {
       const wrapper = await setupValidForm()
 
-      mockFetch.mockResolvedValueOnce({ code: 200, msg: '第一次成功' })
+      mockFetch.mockResolvedValueOnce({ code: 200, msg: '成功' })
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      mockFetch.mockResolvedValueOnce({ code: 400, msg: '第二次失败' })
-      await wrapper.find('button').trigger('click')
-      await flushPromises()
-
-      expect(wrapper.text()).not.toContain('第一次成功')
-      expect(wrapper.text()).toContain('第二次失败')
+      // Form is gone, success animation is shown
+      expect(wrapper.find('.input_group').exists()).toBe(false)
+      expect(wrapper.find('.success-container').exists()).toBe(true)
     })
 
     it('trims username and minecraftId in submission body', async () => {
@@ -736,7 +757,9 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find(c => c[0] === '/api/register/complete') as [string, { body: { username: string, minecraftId: string } }] | undefined
+      const regCall = mockFetch.mock.calls.find(
+        (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
+      ) as [string, { body: { username: string, minecraftId: string } }] | undefined
       expect(regCall?.[1].body.username).toBe('spacedUser')
       expect(regCall?.[1].body.minecraftId).toBe('Steve')
     })
@@ -744,7 +767,7 @@ describe('register.vue', () => {
 
   // ── 5. UI rendering ──
 
-  describe('uI rendering', () => {
+  describe('ui rendering', () => {
     it('renders register card with illustration', async () => {
       mockRouteQuery.value = { token: 't' }
       mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '1', direction: 0 }, msg: '' })
@@ -832,7 +855,7 @@ describe('register.vue', () => {
       expect(errP.exists()).toBe(true)
     })
 
-    it('shows formSuccess in green text', async () => {
+    it('shows success animation with SVG on successful registration', async () => {
       mockRouteQuery.value = { token: 'tok' }
       mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '1', direction: 0 }, msg: '' })
       const wrapper = createWrapper()
@@ -851,8 +874,9 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const successP = wrapper.find('.form-message.text-green-500')
-      expect(successP.exists()).toBe(true)
+      expect(wrapper.find('.success-container').exists()).toBe(true)
+      expect(wrapper.find('.success-svg').exists()).toBe(true)
+      expect(wrapper.find('.register_form--success').exists()).toBe(true)
     })
 
     it('hides formError when no error', async () => {
@@ -880,6 +904,215 @@ describe('register.vue', () => {
       await flushPromises()
 
       expect(wrapper.find('#register_page').exists()).toBe(true)
+    })
+  })
+
+  // ── 6. Error animation ──
+
+  describe('error animation', () => {
+    it('renders error SVG container when token is missing', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-container').exists()).toBe(true)
+      expect(wrapper.find('.error-svg').exists()).toBe(true)
+    })
+
+    it('renders error SVG container when API returns error', async () => {
+      mockRouteQuery.value = { token: 'bad' }
+      mockFetch.mockResolvedValueOnce({ code: 400, data: null, msg: '链接已过期' })
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-container').exists()).toBe(true)
+      expect(wrapper.find('.error-svg').exists()).toBe(true)
+    })
+
+    it('renders error SVG container when API throws', async () => {
+      mockRouteQuery.value = { token: 'err' }
+      mockFetch.mockRejectedValueOnce(new Error('fail'))
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-container').exists()).toBe(true)
+    })
+
+    it('animates error circle after 300ms', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-circle-path').classes()).not.toContain('animate-error-circle')
+
+      vi.advanceTimersByTime(300)
+      await nextTick()
+
+      expect(wrapper.find('.error-circle-path').classes()).toContain('animate-error-circle')
+    })
+
+    it('animates first cross line after 1000ms', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.cross-line-1').classes()).not.toContain('animate-cross-1')
+
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+
+      expect(wrapper.find('.cross-line-1').classes()).toContain('animate-cross-1')
+    })
+
+    it('animates second cross line after 1400ms', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.cross-line-2').classes()).not.toContain('animate-cross-2')
+
+      vi.advanceTimersByTime(1400)
+      await nextTick()
+
+      expect(wrapper.find('.cross-line-2').classes()).toContain('animate-cross-2')
+    })
+
+    it('shows error text after 1900ms', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-info').classes()).not.toContain('show')
+
+      vi.advanceTimersByTime(1900)
+      await nextTick()
+
+      expect(wrapper.find('.error-info').classes()).toContain('show')
+    })
+
+    it('error text displays correct token error message', async () => {
+      mockRouteQuery.value = {}
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      vi.advanceTimersByTime(1900)
+      await nextTick()
+
+      expect(wrapper.find('.error-title').text()).toBe('链接无效')
+      expect(wrapper.find('.error-hint').text()).toBe('缺少激活链接参数')
+    })
+
+    it('error text displays API error message', async () => {
+      mockRouteQuery.value = { token: 'x' }
+      mockFetch.mockResolvedValueOnce({ code: 400, data: null, msg: '链接已过期' })
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      vi.advanceTimersByTime(1900)
+      await nextTick()
+
+      expect(wrapper.find('.error-hint').text()).toBe('链接已过期')
+    })
+
+    it('does not show error animation when token is valid', async () => {
+      mockRouteQuery.value = { token: 'good' }
+      mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '1', direction: 0 }, msg: '' })
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error-container').exists()).toBe(false)
+      expect(wrapper.find('.error-svg').exists()).toBe(false)
+    })
+  })
+
+  // ── 7. Success animation phases ──
+
+  describe('success animation phases', () => {
+    async function setupValidForm() {
+      mockRouteQuery.value = { token: 'tok' }
+      mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: '1', direction: 0 }, msg: '' })
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      mockFetch.mockResolvedValueOnce({ code: 200, data: 'uuid', msg: '' })
+      await setInput(wrapper, 0, 'user')
+      await setInput(wrapper, 1, 'Steve')
+      await nextTick()
+      vi.advanceTimersByTime(600)
+      await flushPromises()
+      await setInput(wrapper, 2, 'password123')
+      await setInput(wrapper, 3, 'password123')
+      return wrapper
+    }
+
+    it('circle appears after 300ms', async () => {
+      const wrapper = await setupValidForm()
+      mockFetch.mockResolvedValueOnce({ code: 200, msg: '' })
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.circle-path').classes()).not.toContain('animate-circle')
+
+      vi.advanceTimersByTime(300)
+      await nextTick()
+
+      expect(wrapper.find('.circle-path').classes()).toContain('animate-circle')
+    })
+
+    it('check appears after 1000ms', async () => {
+      const wrapper = await setupValidForm()
+      mockFetch.mockResolvedValueOnce({ code: 200, msg: '' })
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.check-path').classes()).not.toContain('animate-check')
+
+      vi.advanceTimersByTime(1000)
+      await nextTick()
+
+      expect(wrapper.find('.check-path').classes()).toContain('animate-check')
+    })
+
+    it('container floats up after 2000ms', async () => {
+      const wrapper = await setupValidForm()
+      mockFetch.mockResolvedValueOnce({ code: 200, msg: '' })
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.success-container').classes()).not.toContain('float-up')
+
+      vi.advanceTimersByTime(2000)
+      await nextTick()
+
+      expect(wrapper.find('.success-container').classes()).toContain('float-up')
+    })
+
+    it('login button appears after 2800ms', async () => {
+      const wrapper = await setupValidForm()
+      mockFetch.mockResolvedValueOnce({ code: 200, msg: '' })
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.success-login-btn').classes()).not.toContain('show')
+
+      vi.advanceTimersByTime(2800)
+      await nextTick()
+
+      expect(wrapper.find('.success-login-btn').classes()).toContain('show')
+    })
+  })
+
+  // ── 8. Test mode token ──
+
+  describe('test mode token', () => {
+    it('uses test data when token is "test"', async () => {
+      mockRouteQuery.value = { token: 'test' }
+      mockFetch.mockResolvedValueOnce({ code: 200, data: { qq: 'ignored', direction: 0 }, msg: '' })
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('114514')
+      expect(wrapper.text()).toContain('测试')
     })
   })
 })
