@@ -11,7 +11,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: 'http://116.233.20.28:8081',
+          target: 'http://lasteamcity.ddns.net:8081',
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ''),
         },
