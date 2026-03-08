@@ -13,6 +13,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        // @ts-ignore
         api: 'modern-compiler' as const,
         loadPaths: [path.resolve(__dirname)],
       },

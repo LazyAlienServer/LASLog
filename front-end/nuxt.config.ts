@@ -5,6 +5,15 @@ export default defineNuxtConfig({
   ssr: false,
   debug: false,
   modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxt/image'],
+  // 生产环境代理（nitro 服务端，build 后生效）
+  nitro: {
+    routeRules: {
+      '/api/**': {
+        proxy: 'http://lasteamcity.ddns.net:8081/**',
+      },
+    },
+  },
+  // 开发环境代理（仅 nuxt dev 时生效）
   vite: {
     plugins: [
     ],
