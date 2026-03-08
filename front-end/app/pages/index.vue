@@ -26,37 +26,43 @@ definePageMeta({
         <img src="/img/logo.svg" alt="LAS LOG Logo">
       </div>
     </div>
-    <div class="button-container">
-      <hr>
-      <NuxtLink id="explore_LASLOG" to="/login">
-        探索 LAS LOG
-      </NuxtLink>
-      <hr>
+    <div class="footer-container">
+      <div class="button-container">
+        <hr>
+        <NuxtLink id="explore_LASLOG" to="/login">
+          探索 LAS LOG
+        </NuxtLink>
+        <hr>
+      </div>
+      <p class="copyright">
+        Copyright © 2026 Lazy Alien Server
+      </p>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 h1 {
-  font-size: 8rem;
+  font-size: clamp(4.8rem, 8vw, 8rem);
   font-weight: 1000;
   color: #746aeb;
-  letter-spacing: 0.25rem;
-  margin: 2rem 0px 2rem 0px;
+  letter-spacing: 0.18rem;
+  line-height: 0.95;
+  margin: 0px 0px 1.5rem;
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   span {
-    margin: -3.8rem 0px;
+    margin: 0px;
   }
 }
 
 h2 {
-  font-size: 3.5rem;
-  letter-spacing: 0.25rem;
-  font-weight: 500;
+  font-size: clamp(2.6rem, 4vw, 4rem);
+  letter-spacing: 0.12rem;
+  font-weight: 700;
+  line-height: 1.12;
   color: #5c39a1;
   margin: 0px;
-  white-space: nowrap;
 }
 
 .h2-mobile {
@@ -64,161 +70,254 @@ h2 {
 }
 
 h3 {
-  font-size: 1.1rem;
+  max-width: 38rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: #a263cf;
   margin: 0px;
-  letter-spacing: 2px;
-  padding-bottom: 2rem;
-  padding-right: 15%;
+  line-height: 1.7;
+  letter-spacing: 0.08rem;
 }
 
 img {
-  width: 34rem;
+  width: min(100%, 36rem);
   height: auto;
 }
 
 .content {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: space-between;
+  align-items: stretch;
   flex-direction: column;
-  height: 90vh;
-  width: 80%;
-  margin-left: 10%;
+  min-height: 100vh;
+  width: min(1280px, calc(100% - 5rem));
+  margin: 0 auto;
+  padding: clamp(3rem, 6vw, 6rem) 0 clamp(2rem, 4vw, 3rem);
+  box-sizing: border-box;
 }
 
 .main-container {
-  margin-top: 2.5rem;
-  display: flex;
-  justify-content: space-between;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: clamp(2rem, 5vw, 6rem);
   align-items: center;
   box-sizing: border-box;
   width: 100%;
+}
+
+.left-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.right-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .tag-container {
   display: flex;
   flex-wrap: wrap;
   flex-direction: row;
-  gap: 1rem;
-  margin: 1rem 0px 2rem;
+  gap: 0.9rem;
+  margin: 0px;
 }
 
 .tag {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: white;
-  letter-spacing: 0.2rem;
+  letter-spacing: 0.14rem;
   background-color: #5c39a1;
   border-radius: 2.5rem;
-  padding: 0px 0.9rem 0px 1.1rem;
+  padding: 0.15rem 0.9rem 0.2rem 1rem;
+}
+
+.footer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  width: 100%;
 }
 
 .button-container {
-  letter-spacing: 2px;
+  letter-spacing: 0.08rem;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  gap: 2.5rem;
-  margin-top: 7vh;
+  gap: clamp(1rem, 2vw, 2rem);
   overflow: hidden;
+
   hr {
-    width: 900px;
+    width: 100%;
     border: 0;
     height: 2px;
     background-color: #746aeb;
     flex-shrink: 0;
+    opacity: 0.9;
   }
+
   #explore_LASLOG {
     color: #746aeb;
-    font-size: 1.4rem;
-    font-weight: 400;
+    font-size: 1.45rem;
+    font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
     flex-shrink: 0;
-    padding: 0.25rem 2.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 1.9rem;
     border: #746aeb 2px solid;
     border-radius: 0.7rem;
     transition: all 0.2s ease-in-out;
   }
+
+  #explore_LASLOG::before {
+    content: '→';
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
   #explore_LASLOG:hover {
     background-color: rgba($color: #746aeb, $alpha: 0.1);
+    transform: translateY(-1px);
   }
 }
 
-@media (max-width: 1680px) {
+.copyright {
+  margin: 0px;
+  text-align: center;
+  color: rgba(116, 106, 235, 0.75);
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.08rem;
+}
+
+@media (max-width: 1200px) {
+  .content {
+    width: min(100%, calc(100% - 3rem));
+  }
+
+  .main-container {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 1024px) {
   .right-container {
     display: none;
   }
+
   h1 {
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
   }
+
   .h2-desktop {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
   }
+
   h3 {
-    padding-right: 0px;
+    max-width: 100%;
   }
+
   .main-container {
+    display: flex;
     justify-content: center;
   }
+
   .left-container {
     text-align: center;
+    align-items: center;
   }
+
   .tag-container {
     justify-content: center;
   }
+
   .tag {
     font-weight: 500;
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 768px) {
   h1 {
-    letter-spacing: 0;
+    gap: 0.8rem;
+    letter-spacing: 0.05rem;
   }
-  .content {
-    width: 90%;
-    margin-left: 5%;
+
+  .button-container {
+    gap: 0.75rem;
+  }
+
+  .button-container #explore_LASLOG {
+    font-size: 1.2rem;
+    padding: 0.55rem 1.4rem;
   }
 }
 
 @media (max-width: 480px) {
   h1 {
-    font-size: 8rem;
+    font-size: 5rem;
     flex-direction: column;
-    margin-top: -1rem;
-    margin-bottom: 3rem;
+    gap: 0;
+    margin-bottom: 1rem;
   }
+
   .h2-desktop {
     display: none;
   }
+
   .h2-mobile {
     font-size: 2.8rem;
-    display: flex; // Removed duplicate 'display: block'
+    display: flex;
     flex-direction: column;
+    align-items: center;
+
     strong {
       font-size: 3rem;
       margin-top: -10px;
     }
   }
+
   h3 {
-    display: none;
+    font-size: 1rem;
+    line-height: 1.6;
   }
+
   .tag {
     padding: 0px 0.7rem 0px 0.9em;
   }
-  hr {
+
+  .button-container hr {
     display: none;
   }
+
   .button-container {
-    margin-top: 3vh;
+    justify-content: center;
+  }
+
+  .button-container #explore_LASLOG {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .content {
+    width: min(100%, calc(100% - 2rem));
+    padding-top: 2.5rem;
+    padding-bottom: 2rem;
+  }
+
+  .copyright {
+    font-size: 0.9rem;
   }
 }
 </style>
