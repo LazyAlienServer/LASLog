@@ -24,6 +24,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+*,
+*::before,
+*::after {
+  font-family: inherit;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   background: transparent;
