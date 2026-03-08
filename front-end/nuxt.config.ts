@@ -8,6 +8,15 @@ export default defineNuxtConfig({
   vite: {
     plugins: [
     ],
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://116.233.20.28:8081',
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api/, ''),
+        },
+      },
+    },
   },
   icon: {
     customCollections: [

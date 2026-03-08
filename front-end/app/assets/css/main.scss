@@ -24,6 +24,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+*,
+*::before,
+*::after {
+  font-family: inherit;
+}
+
 @media (min-width: 2160px) {
   :root {
     --base-font-size: 20px;
