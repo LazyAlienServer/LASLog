@@ -4,8 +4,8 @@ import { computed, ref } from 'vue'
 import navTitleBg from '~/assets/icons/main/nav-tooltip.svg'
 
 const navItems = [
-  { name: 'i-custom-main-nav-home', sizeClass: 'size-[1.8rem]', hoverTitle: '主页' },
-  { name: 'i-custom-main-nav-exclamation', sizeClass: 'size-[1.7rem]', hoverTitle: '提醒' },
+  { name: 'i-custom-main-nav-home', sizeClass: 'size-[1.8rem]', hoverTitle: '主页', path: '/dashboard/home' },
+  { name: 'i-custom-main-nav-exclamation', sizeClass: 'size-[1.7rem]', hoverTitle: '提醒', path: '/dashboard/notification' },
   { name: 'i-custom-main-nav-comment', sizeClass: 'size-[1.8rem]', hoverTitle: '评论' },
   { name: 'i-custom-main-nav-users', sizeClass: 'size-[1.7rem]', hoverTitle: '成员' },
   { name: 'i-custom-main-nav-clipboard', sizeClass: 'size-[1.8rem]', hoverTitle: '任务' },
@@ -17,6 +17,7 @@ const navItems = [
 const activeIndex = ref(0)
 const hoverIndex = ref(0)
 const hoverVisible = ref(false)
+const router = useRouter()
 
 const navContainerStyle = computed(() => ({
   '--active-index': `${activeIndex.value}`,
@@ -32,7 +33,10 @@ const tooltipStyle = computed(() => ({
 }))
 
 function handleClick(index: number) {
+  if (activeIndex.value === index)
+    return
   activeIndex.value = index
+  router.push(navItems[index]?.path || '/dashboard/home')
 }
 
 function handleHover(index: number) {
@@ -43,6 +47,14 @@ function handleHover(index: number) {
 function clearHover() {
   hoverVisible.value = false
 }
+
+onMounted(() => {
+  navItems.forEach((item, index) => {
+    if (item.path === useRoute().path) {
+      handleClick(index)
+    }
+  })
+})
 </script>
 
 <template>
