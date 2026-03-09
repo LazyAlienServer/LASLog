@@ -33,7 +33,7 @@ public class RegisterController {
 
         long expireTime = System.currentTimeMillis() + 24 *  60 * 60 * 1000L;
         String token = registerService.generateToken(dto.getQq(), dto.getDirection(), expireTime);
-        String activationUrl = "https://domain.com/activate?token=" + token;
+        String activationUrl = "https://laslog.lzalien.org/register?token=" + token;
 
         return ResultUtil.result(ResultEnum.SUCCESS.getCode(), activationUrl, "链接生成成功");
     }
