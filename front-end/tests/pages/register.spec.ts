@@ -1,7 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
 
+// ─── Component stubs ───
+import RegisterPage from '../../app/pages/register.vue'
 // ─── Mocks (must be set up before importing the component) ───
 
 // Expose Vue composition APIs as globals (Nuxt auto-imports them)
@@ -20,9 +22,6 @@ vi.stubGlobal('definePageMeta', vi.fn())
 
 const mockRouteQuery = ref<Record<string, string>>({})
 vi.stubGlobal('useRoute', () => ({ query: mockRouteQuery.value }))
-
-// ─── Component stubs ───
-import RegisterPage from '../../app/pages/register.vue'
 
 const UInputStub = defineComponent({
   name: 'UInput',
@@ -384,9 +383,9 @@ describe('register.vue', () => {
 
       const mcCalls = mockFetch.mock.calls.filter(
         (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
-      ) as [string, { params: { username: string } }][]
+      )
       expect(mcCalls).toHaveLength(1)
-      expect(mcCalls[0][1].params.username).toBe('Steve')
+      expect((mcCalls[0][1] as { params: { username: string } }).params.username).toBe('Steve')
     })
 
     it('trims the MC ID before calling API', async () => {
@@ -400,8 +399,8 @@ describe('register.vue', () => {
 
       const mcCalls = mockFetch.mock.calls.filter(
         (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
-      ) as [string, { params: { username: string } }][]
-      expect(mcCalls[0][1].params.username).toBe('Steve')
+      )
+      expect((mcCalls[0][1] as { params: { username: string } }).params.username).toBe('Steve')
     })
 
     it('clears formError when MC ID changes', async () => {
@@ -593,7 +592,7 @@ describe('register.vue', () => {
 
       const regCall = mockFetch.mock.calls.find(
         (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
-      ) as [string, { method: string, body: Record<string, string> }] | undefined
+      )
       expect(regCall).toBeTruthy()
       expect(regCall?.[1]).toEqual({
         method: 'POST',
@@ -759,9 +758,9 @@ describe('register.vue', () => {
 
       const regCall = mockFetch.mock.calls.find(
         (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
-      ) as [string, { body: { username: string, minecraftId: string } }] | undefined
-      expect(regCall?.[1].body.username).toBe('spacedUser')
-      expect(regCall?.[1].body.minecraftId).toBe('Steve')
+      )
+      expect((regCall?.[1] as { body: { username: string, minecraftId: string } })?.body.username).toBe('spacedUser')
+      expect((regCall?.[1] as { body: { username: string, minecraftId: string } })?.body.minecraftId).toBe('Steve')
     })
   })
 

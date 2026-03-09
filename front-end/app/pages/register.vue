@@ -56,10 +56,11 @@ onMounted(async () => {
       `/api/register/activate`,
       { params: { token: token.value } },
     )
-    if (token.value=="test"){
+    if (token.value === 'test') {
       qq.value = '114514'
       direction.value = '测试'
-    }else if (res.code === 200 && res.data) {
+    }
+    else if (res.code === 200 && res.data) {
       qq.value = res.data.qq
       direction.value = directionMap[res.data.direction] ?? '未知'
     }
@@ -230,10 +231,8 @@ async function handleRegister() {
         <NuxtImg class="register_illustration" preload src="/img/register.png" alt="register illustration" />
       </div>
       <div class="register_form" :class="{ 'register_form--success': registerSuccess }">
-        <!-- 注册成功动画 -->
         <template v-if="registerSuccess">
           <div class="success-container" :class="{ 'float-up': floatUp }">
-            <!-- 拆分的 SVG: 圆圈 + 对勾 -->
             <svg
               class="success-svg"
               width="62"
@@ -244,11 +243,10 @@ async function handleRegister() {
             >
               <defs>
                 <linearGradient id="successGradient" x1="30.75" y1="2" x2="30.75" y2="59.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#8295FF"  offset=""/>
+                  <stop stop-color="#8295FF" offset="" />
                   <stop offset="1" stop-color="#C97CFC" />
                 </linearGradient>
               </defs>
-              <!-- 圆圈（顺时针绘制） -->
               <path
                 class="circle-path"
                 :class="{ 'animate-circle': showCircle }"
@@ -258,7 +256,6 @@ async function handleRegister() {
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-              <!-- 对勾（从左下到右上绘制） -->
               <path
                 class="check-path"
                 :class="{ 'animate-check': showCheck }"
@@ -271,7 +268,6 @@ async function handleRegister() {
             </svg>
           </div>
 
-          <!-- 文字与按钮 -->
           <div class="success-info" :class="{ show: showSuccessText }">
             <h2 class="success-title">
               您的账号已注册完成
@@ -294,7 +290,6 @@ async function handleRegister() {
           </UButton>
         </template>
 
-        <!-- Token 无效时显示错误动画 -->
         <template v-else-if="tokenError">
           <div class="error-container">
             <svg
@@ -305,7 +300,6 @@ async function handleRegister() {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <!-- 红色圆圈 -->
               <circle
                 class="error-circle-path"
                 :class="{ 'animate-error-circle': showErrorCircle }"
@@ -317,7 +311,6 @@ async function handleRegister() {
                 stroke-linecap="round"
                 fill="none"
               />
-              <!-- 左上→右下叉线 -->
               <line
                 class="cross-line-1"
                 :class="{ 'animate-cross-1': showCrossLine1 }"
@@ -329,7 +322,6 @@ async function handleRegister() {
                 stroke-width="4"
                 stroke-linecap="round"
               />
-              <!-- 右上→左下叉线 -->
               <line
                 class="cross-line-2"
                 :class="{ 'animate-cross-2': showCrossLine2 }"
@@ -354,7 +346,6 @@ async function handleRegister() {
           </div>
         </template>
 
-        <!-- 正常注册表单 -->
         <template v-else-if="!loading">
           <h1>注册账号</h1>
           <p class="register_subtitle">
@@ -428,7 +419,6 @@ async function handleRegister() {
           </UButton>
         </template>
 
-        <!-- 加载中 -->
         <template v-else>
           <p class="register_subtitle">
             正在验证激活链接...
@@ -797,7 +787,7 @@ $gradient-button: linear-gradient(125.94deg, #e0d1eb 4.86%, #e2b8ff 93.29%);
   font-weight: 400;
   font-size: 22px;
   letter-spacing: 4px;
-  color: #E85454;
+  color: #e85454;
   margin: 0 0 12px;
 }
 

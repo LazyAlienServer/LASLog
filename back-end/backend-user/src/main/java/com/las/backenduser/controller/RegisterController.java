@@ -1,6 +1,7 @@
 package com.las.backenduser.controller;
 
 import com.las.backenduser.model.dto.register.GenerateLinkDTO;
+import com.las.backenduser.model.dto.register.RecentRegistrationVO;
 import com.las.backenduser.model.dto.register.RegisterCompleteDTO;
 import com.las.backenduser.service.RegisterService;
 import com.las.backenduser.utils.result.Result;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/register")
@@ -30,7 +33,7 @@ public class RegisterController {
 
         long expireTime = System.currentTimeMillis() + 24 *  60 * 60 * 1000L;
         String token = registerService.generateToken(dto.getQq(), dto.getDirection(), expireTime);
-        String activationUrl = "https://domain.com/activate?token=" + token;
+        String activationUrl = "https://laslog.lzalien.org/register?token=" + token;
 
         return ResultUtil.result(ResultEnum.SUCCESS.getCode(), activationUrl, "链接生成成功");
     }
@@ -74,6 +77,34 @@ public class RegisterController {
         } catch (Exception e) {
             log.error("完成注册时发生异常: {}", e.getMessage(), e);
             return ResultUtil.result(500, "服务器内部错误，请稍后再试");
+        }
+    }
+
+    @GetMapping("/recentRegistrations")
+    public Result<ArrayList<RecentRegistrationVO>> getRecentRegistrations() {
+        try {
+            ArrayList<RecentRegistrationVO> list = new ArrayList<>(registerService.getRecentRegistrations());
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), list, "查询成功");
+        } catch (Exception e) {
+            log.error("查询最近注册异常: {}", e.getMessage(), e);
+            return ResultUtil.result(ResultEnum.FAIL.getCode(), null, "查询失败");
+        }
+    }
+
+    @PostMapping("/invalidateLink")
+    public Result<Serializable> invalidateLink(@RequestBody Map<String, String> body) {
+        try {
+            String signature = body.get("signature");
+            if (signature == null || signature.trim().isEmpty()) {
+                return ResultUtil.result(ResultEnum.FORBIDDEN.getCode(), "签名不能为空");
+            }
+            registerService.invalidateLink(signature.trim());
+            return ResultUtil.result(ResultEnum.SUCCESS.getCode(), "链接已失效");
+        } catch (IllegalArgumentException e) {
+            return ResultUtil.result(403, e.getMessage());
+        } catch (Exception e) {
+            log.error("手动失效链接异常: {}", e.getMessage(), e);
+            return ResultUtil.result(500, "操作失败");
         }
     }
 }

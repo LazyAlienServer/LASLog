@@ -29,6 +29,7 @@ definePageMeta({
                  base: 'ps-10 bg-transparent text-[#383838] font-thin text-lg ring-0 focus-visible:ring-0' }"
         />
         <UButton
+          to="/dashboard/home"
           :ui="{
             base: 'mt-8 w-7/10 h-11 justify-center button_wrapper text-white text-xl tracking-[1rem] hover:opacity-90',
           }"
