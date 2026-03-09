@@ -1,5 +1,5 @@
-import { expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { expect, it } from 'vitest'
 
 import BackgroundDefault from '../../app/layouts/background-default.vue'
 

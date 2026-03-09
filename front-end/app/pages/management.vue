@@ -32,11 +32,6 @@ interface RecentRegistration {
   signature: string
 }
 
-interface WhitelistRequest {
-  username: string
-  server: string
-}
-
 interface SubAccountRequest {
   username: string
   subAccountId: string
@@ -130,12 +125,10 @@ const generatedLink = ref('')
 const generateLoading = ref(false)
 const generateError = ref('')
 
-// 方向名 → 后端枚举值
-const directionMap: Record<string, number> = {
-  '红石': 0,
-  '后勤': 1,
-  '其他': 2,
-}
+// 方向名 → 后端枚举值（索引即枚举值）
+const directionMap: Record<string, number> = Object.fromEntries(
+  activateDirectionOptions.map((name, i) => [name, i]),
+)
 
 async function generateLink() {
   if (!activateQQ.value.trim()) {
@@ -273,14 +266,6 @@ function onDocumentClick() {
 let recentTimer: ReturnType<typeof setInterval> | null = null
 let nowTimer: ReturnType<typeof setInterval> | null = null
 
-// --- 右侧: 白名单申请 ---
-const whitelistRequests = ref<WhitelistRequest[]>([
-  { username: 'tanh丶桁', server: 'Survival' },
-  { username: 'tanh丶桁', server: 'Survival' },
-  { username: 'tanh丶桁', server: 'Survival' },
-])
-const whitelistPending = ref(3)
-
 // --- 右侧: 子账户申请 ---
 const subAccountRequests = ref<SubAccountRequest[]>([
   { username: 'tanh丶桁', subAccountId: 'tanh_Heng_2' },
@@ -289,6 +274,13 @@ const subAccountRequests = ref<SubAccountRequest[]>([
 ])
 const subAccountPending = ref(3)
 
+// --- 右侧: 白名单申请 ---
+interface WhitelistRequest {
+  username: string
+  server: string
+}
+const whitelistRequests = ref<WhitelistRequest[]>([])
+const whitelistPending = computed(() => whitelistRequests.value.length)
 
 // --- 分页 ---
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pageSize.value)))
@@ -299,7 +291,9 @@ const visiblePages = computed(() => {
   const current = currentPage.value
 
   if (total <= 5) {
-    for (let i = 1; i <= total; i++) pages.push(i)
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
     return pages
   }
 
@@ -312,7 +306,9 @@ const visiblePages = computed(() => {
   // 当前页附近
   const start = Math.max(2, current - 1)
   const end = Math.min(total - 1, current + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
 
   if (current < total - 2)
     pages.push('...')
@@ -349,7 +345,9 @@ onMounted(() => {
   // 每10秒刷新最近注册
   recentTimer = setInterval(loadRecentRegistrations, 10000)
   // 每分钟更新倒计时
-  nowTimer = setInterval(() => { now.value = Date.now() }, 60000)
+  nowTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 60000)
   // 点击其他地方重置确认态
   document.addEventListener('click', onDocumentClick)
 })
@@ -401,10 +399,8 @@ async function copyLink() {
 <template>
   <div id="management_page">
     <div class="page-layout">
-      <!-- ====== 左侧: 用户管理表格 ====== -->
       <div class="left-container">
         <div class="management-card">
-          <!-- 标题栏 -->
           <div class="title-bar">
             <div class="title-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -417,10 +413,8 @@ async function copyLink() {
             <span class="title-text">用户管理</span>
           </div>
 
-          <!-- 分割线 -->
           <div class="split-line" />
 
-          <!-- 副标题 + 搜索栏 -->
           <div class="sub-header">
             <h2 class="sub-title">
               所有用户
@@ -436,7 +430,6 @@ async function copyLink() {
             </div>
           </div>
 
-          <!-- 表格 -->
           <div class="table-container">
             <div class="table-header">
               <span class="col-uuid">UUID</span>
@@ -448,7 +441,7 @@ async function copyLink() {
               <span class="col-whitelist">白名单状态</span>
             </div>
 
-            <div v-for="(user, index) in users" :key="user.uuid + '-' + index" class="table-row-wrapper">
+            <div v-for="(user, index) in users" :key="`${user.uuid}-${index}`" class="table-row-wrapper">
               <div class="table-row-line" />
               <div class="table-row">
                 <span class="col-uuid cell-text">
@@ -464,7 +457,7 @@ async function copyLink() {
                 <span class="col-group">
                   <span class="group-text">{{ getGroup(user) }}</span>
                   <svg class="edit-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M13.5 2.25L15.75 4.5L6.75 13.5H4.5V11.25L13.5 2.25Z" fill="#746AEB" />
+                    <path d="M13.5 2.25L15.75 4.5L6.75 13.5H4.5V11.25L13.5 2.25Z" fill="#746aeb" />
                   </svg>
                 </span>
                 <span class="col-date cell-text">{{ formatDate(user.registerDate) }}</span>
@@ -475,17 +468,15 @@ async function copyLink() {
                     :class="{ rotated: expandedRow === index }"
                     width="20" height="20" viewBox="0 0 20 20" fill="none"
                   >
-                    <path d="M5 7.5L10 12.5L15 7.5" stroke="#746AEB" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M5 7.5L10 12.5L15 7.5" stroke="#746aeb" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </span>
               </div>
 
-              <!-- 展开: UUID 完整行 -->
               <div v-if="expandedRow === index" class="uuid-full-row">
                 <div class="uuid-full-gradient" />
               </div>
 
-              <!-- 展开: 白名单浮动面板 -->
               <div v-if="expandedRow === index" class="whitelist-panel">
                 <div class="wl-header">
                   <span class="wl-col-server">服务器</span>
@@ -514,7 +505,6 @@ async function copyLink() {
             </div>
           </div>
 
-          <!-- 分页 -->
           <div class="pagination">
             <button class="page-prev" :class="{ disabled: currentPage === 1 }" @click="goToPage(currentPage - 1)">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -545,9 +535,7 @@ async function copyLink() {
         </div>
       </div>
 
-      <!-- ====== 右侧: 4个卡片 ====== -->
       <div class="right-container">
-        <!-- 卡片1: 激活链接生成 -->
         <div class="right-card">
           <div class="card-header">
             <div class="card-title-bar">
@@ -580,17 +568,15 @@ async function copyLink() {
               {{ generateLoading ? '...' : '生成' }}
             </button>
           </div>
-          <!-- 错误提示 -->
           <div v-if="generateError" class="activate-error">
             {{ generateError }}
           </div>
-          <!-- 生成的链接 -->
           <div v-if="generatedLink" class="activate-link-area">
             <a :href="generatedLink" class="activate-link" target="_blank">
               {{ generatedLink }}
             </a>
             <button class="copy-btn" :title="linkCopied ? '已复制' : '复制链接'" @click="copyLink">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#005EFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#005eff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
@@ -598,7 +584,6 @@ async function copyLink() {
           </div>
         </div>
 
-        <!-- 卡片2: 最近注册 -->
         <div class="right-card">
           <div class="card-header">
             <div class="card-title-bar">
@@ -640,7 +625,6 @@ async function copyLink() {
           </div>
         </div>
 
-        <!-- 卡片3: 白名单申请 -->
         <div class="right-card">
           <div class="card-header">
             <div class="card-title-bar">
@@ -676,7 +660,6 @@ async function copyLink() {
           </div>
         </div>
 
-        <!-- 卡片4: 子账户申请 -->
         <div class="right-card">
           <div class="card-header">
             <div class="card-title-bar">
@@ -719,17 +702,17 @@ async function copyLink() {
 
 <style scoped lang="scss">
 // --- 颜色变量 ---
-$primary: #746AEB;
-$primary-dark: #5C39A1;
-$card-bg: #FFFFFF;
-$text-title: #0F0F0F;
+$primary: #746aeb;
+$primary-dark: #5c39a1;
+$card-bg: #ffffff;
+$text-title: #0f0f0f;
 $text-body: #262626;
 $text-label: #646464;
-$border-light: #D9D9D9;
-$tag-red: #E40000;
-$tag-green: #32A045;
-$link-blue: #005EFF;
-$accent: #8194F0;
+$border-light: #d9d9d9;
+$tag-red: #e40000;
+$tag-green: #32a045;
+$link-blue: #005eff;
+$accent: #8194f0;
 
 // ========================
 // 页面整体布局 (设计稿 1672px, 自动缩放适配屏幕)
@@ -871,7 +854,7 @@ $accent: #8194F0;
     font-weight: 400;
     font-size: 16px;
     line-height: 100%;
-    color: #B3B3B3;
+    color: #b3b3b3;
     width: 100%;
     cursor: pointer;
   }
@@ -907,7 +890,7 @@ $accent: #8194F0;
     flex: 1;
 
     &::placeholder {
-      color: #B3B3B3;
+      color: #b3b3b3;
     }
   }
 
@@ -925,13 +908,31 @@ $accent: #8194F0;
   overflow-y: auto;
 }
 
-.col-uuid { width: 142px; min-width: 77px; }
-.col-username { width: 139px; }
-.col-account { width: 163px; }
-.col-direction { width: 114px; }
-.col-group { width: 121px; }
-.col-date { width: 151px; }
-.col-whitelist { width: 100px; }
+.col-uuid {
+  width: 142px;
+  min-width: 77px;
+}
+.col-username {
+  width: 139px;
+}
+.col-account {
+  width: 163px;
+}
+.col-direction {
+  width: 114px;
+}
+.col-group {
+  width: 121px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.col-date {
+  width: 151px;
+}
+.col-whitelist {
+  width: 100px;
+}
 
 .table-header {
   display: flex;
@@ -990,13 +991,7 @@ $accent: #8194F0;
   font-weight: 500;
   font-size: 16px;
   letter-spacing: 0.05em;
-  color: #FFFFFF;
-}
-
-.col-group {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  color: #ffffff;
 }
 
 .group-text {
@@ -1069,7 +1064,7 @@ $accent: #8194F0;
   left: 0;
   width: 481px;
   height: 100%;
-  background: linear-gradient(90deg, #FFFFFF 76.51%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(90deg, #ffffff 76.51%, rgba(255, 255, 255, 0) 100%);
   pointer-events: none;
 }
 
@@ -1081,7 +1076,7 @@ $accent: #8194F0;
   width: 302px;
   background: $card-bg;
   border: 1px solid $border-light;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   border-radius: 5px;
   padding: 9px 14px;
 }
@@ -1100,9 +1095,16 @@ $accent: #8194F0;
   }
 }
 
-.wl-col-server { width: 90px; }
-.wl-col-status { width: 90px; }
-.wl-col-action { flex: 1; min-width: 80px; }
+.wl-col-server {
+  width: 90px;
+}
+.wl-col-status {
+  width: 90px;
+}
+.wl-col-action {
+  flex: 1;
+  min-width: 80px;
+}
 
 .wl-row {
   display: flex;
@@ -1210,12 +1212,13 @@ $accent: #8194F0;
   color: $text-body;
 
   &.active {
-    background: #8C84E5;
-    color: #FFFFFF;
+    background: #5046c8;
+    /* stylelint-disable-next-line color-contrast */
+    color: #ffffff;
   }
 
   &:hover:not(.active) {
-    background: rgba(#8C84E5, 0.1);
+    background: rgba(#5046c8, 0.1);
   }
 }
 
@@ -1491,12 +1494,24 @@ $accent: #8194F0;
 }
 
 // 最近注册列宽
-.mini-col-user { width: 154px; }
-.mini-col-id { width: 178px; }
-.mini-col-status { flex: 1; }
-.mini-col-server { width: 148px; }
-.mini-col-subid { width: 201px; }
-.mini-col-action { flex: 1; }
+.mini-col-user {
+  width: 154px;
+}
+.mini-col-id {
+  width: 178px;
+}
+.mini-col-status {
+  flex: 1;
+}
+.mini-col-server {
+  width: 148px;
+}
+.mini-col-subid {
+  width: 201px;
+}
+.mini-col-action {
+  flex: 1;
+}
 
 .status-text {
   font-family: 'Poppins', sans-serif;
@@ -1514,7 +1529,7 @@ $accent: #8194F0;
 }
 
 .status-confirming {
-  color: #E40000 !important;
+  color: #e40000 !important;
   text-decoration: underline;
   cursor: pointer;
   font-weight: 500;
@@ -1556,6 +1571,3 @@ $accent: #8194F0;
   }
 }
 </style>
-
-
-

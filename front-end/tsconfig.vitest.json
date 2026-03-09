@@ -2,8 +2,8 @@
   "extends": "./.nuxt/tsconfig.app.json",
   "compilerOptions": {
     "composite": true,
-    "noUncheckedIndexedAccess": false,
     "types": ["node", "vitest/globals"],
+    "noUncheckedIndexedAccess": false,
     "verbatimModuleSyntax": false
   },
   "include": [

@@ -1,3 +1,5 @@
+import process from 'node:process'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -9,7 +11,7 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       '/api/**': {
-        proxy: `${process.env.API_BASE_URL || 'http://localhost:8081'}/**`,
+        proxy: `${(process.env.API_BASE_URL !== undefined && process.env.API_BASE_URL !== '') ? process.env.API_BASE_URL : 'http://localhost:8081'}/**`,
       },
     },
   },
@@ -20,7 +22,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: process.env.API_BASE_URL || 'http://localhost:8081',
+          target: (process.env.API_BASE_URL !== undefined && process.env.API_BASE_URL !== '') ? process.env.API_BASE_URL : 'http://localhost:8081',
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ''),
         },
