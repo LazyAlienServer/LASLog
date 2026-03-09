@@ -49,6 +49,11 @@ remote:
     token: '@LazyAlienServer'
 server:
   port: 8081
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: true
 secret:
   jwt:
     #这里的token-salt用于生成激活链接
