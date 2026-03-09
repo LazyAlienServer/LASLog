@@ -2,13 +2,14 @@
   "extends": "./.nuxt/tsconfig.app.json",
   "compilerOptions": {
     "composite": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false
   },
   "include": [
-    "tests/**/*.ts",
-    "tests/**/*.tsx",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.vue"
+    "./.nuxt/nuxt.d.ts",
+    "vitest.config.ts",
+    "tests/**/*",
+    "app/**/*"
   ]
 }
