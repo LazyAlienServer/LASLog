@@ -1,0 +1,15 @@
+{
+  "extends": "./.nuxt/tsconfig.app.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["node", "vitest/globals"],
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false
+  },
+  "include": [
+    "./.nuxt/nuxt.d.ts",
+    "vitest.config.ts",
+    "tests/**/*",
+    "app/**/*"
+  ]
+}

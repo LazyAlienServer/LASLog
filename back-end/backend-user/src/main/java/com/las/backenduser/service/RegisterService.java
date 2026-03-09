@@ -1,9 +1,11 @@
 package com.las.backenduser.service;
 
+import com.las.backenduser.model.dto.register.RecentRegistrationVO;
 import com.las.backenduser.model.dto.register.RegisterCompleteDTO;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,33 +14,21 @@ import java.util.Map;
  */
 public interface RegisterService {
 
-    /**
-     * 生成激活 Token
-     *
-     * @param qq        QQ号
-     * @param direction 审核方向 0:红石 1:后勤 2:其他
-     * @param expireMs  过期时间(毫秒戳)
-     * @return token 字符串
-     */
+    // ...existing methods...
     String generateToken(String qq, int direction, long expireMs);
-
-    /**
-     * 校验并解析 Token
-     *
-     * @param token 激活链接中的 token
-     * @return 如果校验成功，返回包含 qq 和 direction 的 Map；失败抛出 IllegalArgumentException
-     */
     Map<String, Object> verifyAndDecodeToken(String token);
+    String checkMinecraftId(String username) throws IOException;
+    HashMap<String, Object> activateToken(String token);
+    void completeRegister(RegisterCompleteDTO dto) throws IOException;
 
     /**
-     * 校验 Minecraft ID
-     *
-     * @param username Minecraft 用户名
-     * @return UUID 字符串，如果不存在则返回 null
+     * 获取最近注册条目列表（24小时内的所有状态）
      */
-    String checkMinecraftId(String username) throws IOException;
+    List<RecentRegistrationVO> getRecentRegistrations();
 
-    HashMap<String, Object> activateToken(String token);
-
-    void completeRegister(RegisterCompleteDTO dto) throws IOException;
+    /**
+     * 手动失效一个激活链接
+     * @param signature 链接签名（唯一标识）
+     */
+    void invalidateLink(String signature);
 }

@@ -1,0 +1,12 @@
+# 忽略依赖包
+node_modules/
+
+# 忽略构建产物
+.output/
+.nuxt/
+dist/
+
+coverage/
+
+# 忽略其他自动生成的文件
+public/
