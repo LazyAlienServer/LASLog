@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -39,6 +40,8 @@ class RegisterServiceImplTest {
     private RestTemplate restTemplate;
     @Mock
     private ValueOperations<String, String> valueOperations;
+    @Mock
+    private HashOperations<String, Object, Object> hashOperations;
 
     @InjectMocks
     private RegisterServiceImpl registerService;
@@ -51,6 +54,10 @@ class RegisterServiceImplTest {
         ReflectionTestUtils.setField(registerService, "restTemplate", restTemplate);
 
         ReflectionTestUtils.setField(registerService, "tokenSalt", SALT);
+
+        // 让所有测试的 opsForHash() 都有返回值，避免 NullPointerException
+        // 使用 lenient 避免在不调用 opsForHash() 的测试中触发 UnnecessaryStubbingException
+        lenient().when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
     }
 
     private String createTestToken(String qq, int direction, long expireMs) {
