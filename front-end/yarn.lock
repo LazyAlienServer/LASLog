@@ -1207,6 +1207,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fingerprintjs/fingerprintjs@npm:^5.1.0":
+  version: 5.1.0
+  resolution: "@fingerprintjs/fingerprintjs@npm:5.1.0"
+  checksum: 10c0/cb510955be919ff493e402b66cb874772d0699e60336e08b866b7a193160fdc01dc4666394721b3ddc000c3453a244c057efc5d41fd20ae088c63384d5f78e9e
+  languageName: node
+  linkType: hard
+
 "@floating-ui/core@npm:^1.7.4":
   version: 1.7.4
   resolution: "@floating-ui/core@npm:1.7.4"
@@ -8209,6 +8216,7 @@ __metadata:
   resolution: "front-end@workspace:."
   dependencies:
     "@antfu/eslint-config": "npm:^7.4.3"
+    "@fingerprintjs/fingerprintjs": "npm:^5.1.0"
     "@nuxt/eslint": "npm:^1.15.1"
     "@nuxt/image": "npm:2.0.0"
     "@nuxt/ui": "npm:^4.4.0"
