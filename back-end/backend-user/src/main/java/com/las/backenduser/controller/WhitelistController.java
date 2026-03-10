@@ -9,6 +9,7 @@ import com.las.backenduser.utils.jwt.JwtUtils;
 import com.las.backenduser.utils.result.Result;
 import com.las.backenduser.utils.result.ResultEnum;
 import com.las.backenduser.utils.result.ResultUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -78,15 +79,15 @@ public class WhitelistController {
     }
 
     /**
-     * 玩家申请白名单（通过 Authorization Header 中的 Access Token 识别身份）
+     * 玩家申请白名单（通过全局 bearerAuth / Authorization Header 中的 Access Token 识别身份）
      * POST /whitelist/apply
-     * Header: Authorization: Bearer <AT>
      * Body: { server }
      */
     @PostMapping("/apply")
     public Result<Serializable> apply(
-            @RequestHeader("Authorization") String authHeader,
+            HttpServletRequest request,
             @RequestBody WhitelistApplyDTO dto) {
+        String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "请先登录");
         }
@@ -94,7 +95,8 @@ public class WhitelistController {
         try {
             String userUuid = jwtUtils.getUserUUIDFromToken(token);
             return whitelistService.applyWhitelist(userUuid, dto.getServer());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.warn("白名单申请 Token 解析失败: {}", e.getMessage());
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "Token 无效或已过期");
         }

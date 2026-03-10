@@ -38,7 +38,6 @@ spring:
           min-idle: 0
 springdoc:
   swagger-ui:
-    # swagger-ui.html 位置
     path: /api-docs.html
     operations-sorter: alpha
   api-docs:
