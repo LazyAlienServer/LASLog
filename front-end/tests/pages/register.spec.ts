@@ -381,8 +381,8 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter(
-        (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
+      const mcCalls = (mockFetch.mock.calls).filter(
+        (c: any[]) => c[0] === '/api/register/check-mc-id',
       )
       expect(mcCalls).toHaveLength(1)
       expect((mcCalls[0][1] as { params: { username: string } }).params.username).toBe('Steve')
@@ -397,10 +397,10 @@ describe('register.vue', () => {
       vi.advanceTimersByTime(600)
       await flushPromises()
 
-      const mcCalls = mockFetch.mock.calls.filter(
-        (c: [string, ...unknown[]]) => c[0] === '/api/register/check-mc-id',
+      const mcCalls2 = (mockFetch.mock.calls).filter(
+        (c: any[]) => c[0] === '/api/register/check-mc-id',
       )
-      expect((mcCalls[0][1] as { params: { username: string } }).params.username).toBe('Steve')
+      expect((mcCalls2[0][1] as { params: { username: string } }).params.username).toBe('Steve')
     })
 
     it('clears formError when MC ID changes', async () => {
@@ -590,8 +590,8 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find(
-        (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
+      const regCall = (mockFetch.mock.calls).find(
+        (c: any[]) => c[0] === '/api/register/complete',
       )
       expect(regCall).toBeTruthy()
       expect(regCall?.[1]).toEqual({
@@ -756,11 +756,12 @@ describe('register.vue', () => {
       await wrapper.find('button').trigger('click')
       await flushPromises()
 
-      const regCall = mockFetch.mock.calls.find(
-        (c: [string, ...unknown[]]) => c[0] === '/api/register/complete',
+      const regCall = (mockFetch.mock.calls).find(
+        (c: any[]) => c[0] === '/api/register/complete',
       )
-      expect((regCall?.[1] as { body: { username: string, minecraftId: string } })?.body.username).toBe('spacedUser')
-      expect((regCall?.[1] as { body: { username: string, minecraftId: string } })?.body.minecraftId).toBe('Steve')
+      const regBody = (regCall?.[1] as { body: { username: string, minecraftId: string } } | undefined)?.body
+      expect(regBody?.username).toBe('spacedUser')
+      expect(regBody?.minecraftId).toBe('Steve')
     })
   })
 

@@ -7,6 +7,7 @@ definePageMeta({
 interface WhitelistEntry {
   server: string
   status: '已添加' | '未添加' | '封禁'
+  banExpireAt?: number
 }
 
 interface UserVO {
@@ -37,12 +38,24 @@ interface SubAccountRequest {
   subAccountId: string
 }
 
+interface WhitelistApplicationVO {
+  id: string
+  userUuid: string
+  username: string
+  server: string
+  status: string
+  createTime: number
+}
+
 // --- 后端API获取用户列表 ---
 const users = ref<UserVO[]>([])
 const usersLoading = ref(false)
 
 // 所有服务器列表（白名单详情展开用）
 const allServers = ['Survival', 'Mirror', 'Creative2', 'Creative', 'Storage', 'Void']
+
+// 封禁状态缓存: key = `${minecraftUuid}:${server}`, value = banExpireAt（毫秒，-1=永久，undefined=未封禁）
+const banExpireMap = ref<Record<string, number | undefined>>({})
 
 // 格式化注册日期（毫秒时间戳 → yyyy-MM-dd）
 function formatDate(timestamp: number): string {
@@ -65,13 +78,60 @@ function getGroup(user: UserVO): string {
   return user.permission?.[0] || '-'
 }
 
-// 构建白名单详情（基于 allServers 和 user.whitelist）
+// 格式化封禁剩余时间
+function formatBanRemaining(expireAt: number): string {
+  if (expireAt === -1)
+    return '永久'
+  const diff = expireAt - Date.now()
+  if (diff <= 0)
+    return '已到期'
+  const d = Math.floor(diff / 86400000)
+  const h = Math.floor((diff % 86400000) / 3600000)
+  const m = Math.floor((diff % 3600000) / 60000)
+  if (d > 0)
+    return `${d}d${h}h${m}m`
+  if (h > 0)
+    return `${h}h${m}m`
+  return `${m}m`
+}
+
+// 获取某个用户+服务器的封禁到期时间
+function getBanExpireAt(user: UserVO, server: string): number | undefined {
+  const mcUuid = user.mainMinecraftUuid || user.minecraftUuids?.[0]
+  if (!mcUuid)
+    return undefined
+  return banExpireMap.value[`${mcUuid}:${server}`]
+}
+
+// 构建白名单详情（基于 allServers、user.whitelist 和封禁缓存）
 function getWhitelistEntries(user: UserVO): WhitelistEntry[] {
   const wl = user.whitelist || []
-  return allServers.map(server => ({
-    server,
-    status: wl.includes(server) ? '已添加' as const : '未添加' as const,
-  }))
+  return allServers.map((server) => {
+    const expireAt = getBanExpireAt(user, server)
+    if (expireAt !== undefined)
+      return { server, status: '封禁' as const, banExpireAt: expireAt }
+    return { server, status: wl.includes(server) ? '已添加' as const : '未添加' as const, banExpireAt: undefined }
+  })
+}
+
+// 批量查询展开行用户的封禁状态
+async function fetchBanStatus(user: UserVO) {
+  const mcUuid = user.mainMinecraftUuid || user.minecraftUuids?.[0]
+  if (!mcUuid)
+    return
+  for (const server of allServers) {
+    try {
+      const res = await $fetch<{ code: number, data: { status: number, banExpireAt: number | null } | null }>('/api/whitelist/status', {
+        params: { minecraftUuid: mcUuid, server },
+      })
+      const key = `${mcUuid}:${server}`
+      if (res.code === 200 && res.data?.status === -1)
+        banExpireMap.value[key] = res.data.banExpireAt ?? -1
+      else
+        banExpireMap.value[key] = undefined
+    }
+    catch { /* ignore */ }
+  }
 }
 
 // --- 搜索 & 分页 ---
@@ -275,12 +335,38 @@ const subAccountRequests = ref<SubAccountRequest[]>([
 const subAccountPending = ref(3)
 
 // --- 右侧: 白名单申请 ---
-interface WhitelistRequest {
-  username: string
-  server: string
-}
-const whitelistRequests = ref<WhitelistRequest[]>([])
+const whitelistRequests = ref<WhitelistApplicationVO[]>([])
 const whitelistPending = computed(() => whitelistRequests.value.length)
+
+async function loadWhitelistApplications() {
+  try {
+    const res = await $fetch<{
+      code: number
+      data: { items: WhitelistApplicationVO[] } | null
+      msg: string
+    }>('/api/whitelist/applications/pending')
+    if (res.code === 200 && res.data)
+      whitelistRequests.value = res.data.items
+    else
+      whitelistRequests.value = []
+  }
+  catch {
+    whitelistRequests.value = []
+  }
+}
+
+async function reviewWhitelistApplication(id: string, approve: boolean) {
+  try {
+    await $fetch(`/api/whitelist/applications/${id}/review`, {
+      method: 'POST',
+      params: { approve },
+    })
+    await loadWhitelistApplications()
+  }
+  catch (e) {
+    console.error('reviewWhitelistApplication failed:', e)
+  }
+}
 
 // --- 分页 ---
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pageSize.value)))
@@ -342,6 +428,7 @@ watch(searchQuery, () => {
 onMounted(() => {
   loadUsers()
   loadRecentRegistrations()
+  loadWhitelistApplications()
   // 每10秒刷新最近注册
   recentTimer = setInterval(loadRecentRegistrations, 10000)
   // 每分钟更新倒计时
@@ -364,10 +451,94 @@ onUnmounted(() => {
 const expandedRow = ref<number | null>(null)
 
 function toggleRow(index: number) {
-  expandedRow.value = expandedRow.value === index ? null : index
+  if (expandedRow.value === index) {
+    expandedRow.value = null
+  }
+  else {
+    expandedRow.value = index
+    // 展开时查询该用户的封禁状态
+    fetchBanStatus(users.value[index])
+  }
+}
+
+// --- 封禁弹窗 ---
+const banDialog = ref(false)
+const banDays = ref(7)
+const banTarget = ref<{ user: UserVO, server: string } | null>(null)
+
+function openBanDialog(user: UserVO, server: string) {
+  banTarget.value = { user, server }
+  banDays.value = 7
+  banDialog.value = true
+}
+
+function closeBanDialog() {
+  banDialog.value = false
+  banTarget.value = null
 }
 
 // --- 白名单操作 ---
+const wlActionLoading = ref<Record<string, boolean>>({})
+
+function wlKey(user: UserVO, server: string) {
+  return `${user.uuid}:${server}`
+}
+
+async function handleWhitelistAction(user: UserVO, server: string, action: string) {
+  const mcUuid = user.mainMinecraftUuid || user.minecraftUuids?.[0]
+  if (!mcUuid)
+    return
+  if (action === '封禁') {
+    openBanDialog(user, server)
+    return
+  }
+  const key = wlKey(user, server)
+  wlActionLoading.value[key] = true
+  try {
+    let endpoint: string
+    if (action === '添加')
+      endpoint = '/api/whitelist/add'
+    else if (action === '移除')
+      endpoint = '/api/whitelist/remove'
+    else
+      endpoint = '/api/whitelist/unban'
+    await $fetch(endpoint, {
+      method: 'POST',
+      body: { minecraftUuid: mcUuid, server },
+    })
+    // 刷新用户列表 + 封禁状态
+    await loadUsers()
+    await fetchBanStatus(users.value[expandedRow.value ?? 0])
+  }
+  catch (e) {
+    console.error('whitelist action failed:', e)
+  }
+  finally {
+    wlActionLoading.value[key] = false
+  }
+}
+
+async function confirmBan() {
+  if (!banTarget.value)
+    return
+  const { user, server } = banTarget.value
+  const mcUuid = user.mainMinecraftUuid || user.minecraftUuids?.[0]
+  if (!mcUuid)
+    return
+  try {
+    await $fetch('/api/whitelist/ban', {
+      method: 'POST',
+      body: { minecraftUuid: mcUuid, server, banDays: banDays.value },
+    })
+    closeBanDialog()
+    await loadUsers()
+    await fetchBanStatus(users.value[expandedRow.value ?? 0])
+  }
+  catch (e) {
+    console.error('ban failed:', e)
+  }
+}
+
 function getStatusColor(status: string) {
   if (status === '已添加')
     return '#32A045'
@@ -487,6 +658,9 @@ async function copyLink() {
                   <span class="wl-col-server wl-server-name">{{ entry.server }}</span>
                   <span class="wl-col-status wl-status-text" :style="{ color: getStatusColor(entry.status) }">
                     {{ entry.status }}
+                    <span v-if="entry.status === '封禁' && entry.banExpireAt !== undefined" class="ban-remain">
+                      {{ formatBanRemaining(entry.banExpireAt) }}
+                    </span>
                   </span>
                   <span class="wl-col-action wl-actions">
                     <a
@@ -494,8 +668,8 @@ async function copyLink() {
                       :key="action.label"
                       href="#"
                       class="action-link"
-                      :style="{ color: action.color }"
-                      @click.prevent
+                      :style="{ color: action.color, opacity: wlActionLoading[wlKey(user, entry.server)] ? 0.5 : 1 }"
+                      @click.prevent="handleWhitelistAction(user, entry.server, action.label)"
                     >
                       {{ action.label }}
                     </a>
@@ -649,12 +823,12 @@ async function copyLink() {
               <span class="mini-col-server">服务器</span>
               <span class="mini-col-action">操作</span>
             </div>
-            <div v-for="(item, i) in whitelistRequests" :key="i" class="mini-table-row">
+            <div v-for="item in whitelistRequests" :key="item.id" class="mini-table-row">
               <span class="mini-col-user mini-cell">{{ item.username }}</span>
               <span class="mini-col-server mini-cell">{{ item.server }}</span>
               <span class="mini-col-action mini-actions">
-                <a href="#" class="action-add" @click.prevent>添加</a>
-                <a href="#" class="action-reject" @click.prevent>拒绝</a>
+                <a href="#" class="action-add" @click.prevent="reviewWhitelistApplication(item.id, true)">同意</a>
+                <a href="#" class="action-reject" @click.prevent="reviewWhitelistApplication(item.id, false)">拒绝</a>
               </span>
             </div>
           </div>
@@ -694,6 +868,30 @@ async function copyLink() {
               </span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 封禁弹窗 -->
+    <div v-if="banDialog" class="ban-dialog-mask" @click.self="closeBanDialog">
+      <div class="ban-dialog">
+        <div class="ban-dialog-title">
+          封禁玩家
+        </div>
+        <div class="ban-dialog-info">
+          服务器：<strong>{{ banTarget?.server }}</strong>
+        </div>
+        <div class="ban-dialog-row">
+          <label class="ban-dialog-label" for="ban-days-input">封禁天数（0 = 永久）</label>
+          <input id="ban-days-input" v-model.number="banDays" class="ban-dialog-input" type="number" min="0" placeholder="7">
+        </div>
+        <div class="ban-dialog-actions">
+          <button class="ban-dialog-cancel" @click="closeBanDialog">
+            取消
+          </button>
+          <button class="ban-dialog-confirm" @click="confirmBan">
+            确认封禁
+          </button>
         </div>
       </div>
     </div>
@@ -1125,6 +1323,14 @@ $accent: #8194f0;
 
 .wl-status-text {
   font-weight: 300;
+}
+
+.ban-remain {
+  font-size: 12px;
+  font-weight: 400;
+  color: #c00000;
+  margin-left: 4px;
+  opacity: 0.85;
 }
 
 .wl-actions {
@@ -1568,6 +1774,106 @@ $accent: #8194f0;
 
   &:hover {
     opacity: 0.8;
+  }
+}
+
+// ========================
+// 封禁弹窗
+// ========================
+.ban-dialog-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.ban-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 36px 28px;
+  width: 360px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.ban-dialog-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: $primary;
+  margin-bottom: 16px;
+}
+
+.ban-dialog-info {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: $text-body;
+  margin-bottom: 18px;
+}
+
+.ban-dialog-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ban-dialog-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: $text-label;
+}
+
+.ban-dialog-input {
+  height: 36px;
+  border: 1px solid $border-light;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  color: $text-body;
+  outline: none;
+
+  &:focus {
+    border-color: $primary;
+  }
+}
+
+.ban-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.ban-dialog-cancel {
+  padding: 8px 20px;
+  border: 1px solid $border-light;
+  border-radius: 8px;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: $text-label;
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+}
+
+.ban-dialog-confirm {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #c00000;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: #fff;
+  cursor: pointer;
+
+  &:hover {
+    background: #a00000;
   }
 }
 </style>
