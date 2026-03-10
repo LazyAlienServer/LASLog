@@ -1,4 +1,25 @@
 <script setup lang="ts">
+import FingerprintJS from '@fingerprintjs/fingerprintjs'
+
+import { useTokenStore } from '~/stores/tokenStore'
+
+async function generateFingerprint() {
+  try {
+    const fp = await FingerprintJS.load()
+    const result = await fp.get()
+    useTokenStore().setBrowserFinger(result.visitorId)
+  }
+  catch (error) {
+    console.error('Fingerprint error:', error)
+  }
+}
+
+onMounted(() => {
+  // 尝试从localStorage获取已生成的指纹
+  if (!useTokenStore().browserFinger)
+    generateFingerprint()
+})
+
 definePageMeta({
   layout: 'background-default',
 })
