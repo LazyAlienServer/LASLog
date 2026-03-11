@@ -11,5 +11,5 @@ export const useTokenStore = defineStore('tokens', () => {
   function setBrowserFinger(value: string) {
     browserFinger.value = value
   }
-  return { browserFinger, setBrowserFinger, setAccessToken }
+  return { browserFinger, accessToken, setBrowserFinger, setAccessToken }
 })

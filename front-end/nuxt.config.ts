@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         '/api': {
-          target: (process.env.API_BASE_URL !== undefined && process.env.API_BASE_URL !== '') ? process.env.API_BASE_URL : 'http://localhost:8081',
+          target: (process.env.API_BASE_URL !== undefined && process.env.API_BASE_URL !== '') ? process.env.API_BASE_URL : 'http://116.233.20.28:8081',
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api/, ''),
         },

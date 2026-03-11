@@ -3,6 +3,9 @@ import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 import { useTokenStore } from '~/stores/tokenStore'
 
+const username = ref('')
+const password = ref('')
+
 async function generateFingerprint() {
   try {
     const fp = await FingerprintJS.load()
@@ -11,13 +14,53 @@ async function generateFingerprint() {
   }
   catch (error) {
     console.error('Fingerprint error:', error)
+    useTokenStore().setBrowserFinger(useRandomKey())
   }
+}
+
+async function login() {
+  const { code, data } = await $fetch<{ code: number, data: string }>('/api/login/login', {
+    method: 'post',
+    body: {
+      username: username.value,
+      password: password.value,
+      browserFinger: useTokenStore().browserFinger,
+    },
+  })
+  switch (code) {
+    case 200:
+      useTokenStore().setAccessToken(data)
+      useRouter().push('dashboard/home')
+      break
+    case 401:
+      useTokenStore().setAccessToken('')
+      break
+    default:
+      useTokenStore().setAccessToken('')
+  }
+}
+
+async function loginByToken() {
+  if (!useTokenStore().accessToken)
+    return
+  const { code, msg } = await $fetch<{ code: number, msg: string }>('/api/login/loginByToken', {
+    headers: {
+      Authorization: useTokenStore().accessToken,
+    },
+    query: {
+      clientId: useTokenStore().browserFinger,
+    },
+  })
+  // console.log('loginByToken br: ', useTokenStore().browserFinger)
+  // console.log('loginByToken at: ', useTokenStore().accessToken)
+  // console.log('loginByToken:', code, msg)
 }
 
 onMounted(() => {
   // 尝试从localStorage获取已生成的指纹
   if (!useTokenStore().browserFinger)
     generateFingerprint()
+  loginByToken()
 })
 
 definePageMeta({
@@ -34,6 +77,7 @@ definePageMeta({
           账户验证
         </h1>
         <UInput
+          v-model="username"
           type="text"
           icon="i-custom-login-username"
           placeholder="用户名"
@@ -43,6 +87,7 @@ definePageMeta({
                  leadingIcon: 'size-6' }"
         />
         <UInput
+          v-model="password"
           type="password"
           icon="i-custom-login-password"
           placeholder="密码"
@@ -50,10 +95,10 @@ definePageMeta({
                  base: 'ps-10 bg-transparent text-[#383838] font-thin text-lg ring-0 focus-visible:ring-0' }"
         />
         <UButton
-          to="/dashboard/home"
           :ui="{
             base: 'mt-8 w-7/10 h-11 justify-center button_wrapper text-white text-xl tracking-[1rem] hover:opacity-90',
           }"
+          @click="login"
         >
           登录
         </UButton>

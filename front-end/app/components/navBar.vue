@@ -7,7 +7,7 @@ const navItems = [
   { name: 'i-custom-main-nav-home', sizeClass: 'size-[1.8rem]', hoverTitle: '主页', path: '/dashboard/home' },
   { name: 'i-custom-main-nav-exclamation', sizeClass: 'size-[1.7rem]', hoverTitle: '提醒', path: '/dashboard/notification' },
   { name: 'i-custom-main-nav-comment', sizeClass: 'size-[1.8rem]', hoverTitle: '评论' },
-  { name: 'i-custom-main-nav-users', sizeClass: 'size-[1.7rem]', hoverTitle: '成员' },
+  { name: 'i-custom-main-nav-users', sizeClass: 'size-[1.7rem]', hoverTitle: '成员', path: '/dashboard/management' },
   { name: 'i-custom-main-nav-clipboard', sizeClass: 'size-[1.8rem]', hoverTitle: '任务' },
   { name: 'i-custom-main-nav-tray-plus', sizeClass: 'size-[1.7rem]', hoverTitle: '新建' },
   { name: 'i-custom-main-nav-calendar-never', sizeClass: 'size-[1.7rem]', hoverTitle: '日历' },
