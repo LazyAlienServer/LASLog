@@ -1,67 +1,29 @@
 <script setup lang="ts">
-import FingerprintJS from '@fingerprintjs/fingerprintjs'
-
-import { useTokenStore } from '~/stores/tokenStore'
+import { loggedIn } from '~/plugins/api'
+import { useFingerprintStore } from '~/stores/fingerprint'
 
 const username = ref('')
 const password = ref('')
 
-async function generateFingerprint() {
-  try {
-    const fp = await FingerprintJS.load()
-    const result = await fp.get()
-    useTokenStore().setBrowserFinger(result.visitorId)
-  }
-  catch (error) {
-    console.error('Fingerprint error:', error)
-    useTokenStore().setBrowserFinger(useRandomKey())
-  }
-}
-
 async function login() {
-  const { code, data } = await $fetch<{ code: number, data: string }>('/api/login/login', {
+  const clientId = useFingerprintStore().getClientId()
+  const { code } = await $fetch<{ code: number, msg: string }>('/api/login/login', {
     method: 'post',
+    credentials: 'include',
     body: {
       username: username.value,
       password: password.value,
-      browserFinger: useTokenStore().browserFinger,
+      clientId,
     },
   })
-  switch (code) {
-    case 200:
-      useTokenStore().setAccessToken(data)
-      useRouter().push('dashboard/home')
-      break
-    case 401:
-      useTokenStore().setAccessToken('')
-      break
-    default:
-      useTokenStore().setAccessToken('')
+  if (code === 200) {
+    loggedIn.value = true
+    await useRouter().push('/dashboard/home')
+  }
+  else {
+    loggedIn.value = false
   }
 }
-
-async function loginByToken() {
-  if (!useTokenStore().accessToken)
-    return
-  const { code, msg } = await $fetch<{ code: number, msg: string }>('/api/login/loginByToken', {
-    headers: {
-      Authorization: useTokenStore().accessToken,
-    },
-    query: {
-      clientId: useTokenStore().browserFinger,
-    },
-  })
-  // console.log('loginByToken br: ', useTokenStore().browserFinger)
-  // console.log('loginByToken at: ', useTokenStore().accessToken)
-  // console.log('loginByToken:', code, msg)
-}
-
-onMounted(() => {
-  // 尝试从localStorage获取已生成的指纹
-  if (!useTokenStore().browserFinger)
-    generateFingerprint()
-  loginByToken()
-})
 
 definePageMeta({
   layout: 'background-default',
@@ -145,6 +107,16 @@ $gradient-blue-purple-soft: linear-gradient(to right, #8295ff, #c97cfc);
 }
 
 .login_form {
+  :deep(.button_wrapper) {
+    position: relative;
+    background-image: linear-gradient(to right, #e0d1eb, #e2b8ff); /* ✅ 必需：遮挡内容区 */
+    border-radius: 8px;
+    z-index: 1;
+    cursor: pointer;
+    border: none;
+    margin-top: 1rem;
+    font-weight: 400;
+  }
   position: relative;
   top: 0;
   left: 0;
@@ -176,19 +148,6 @@ $gradient-blue-purple-soft: linear-gradient(to right, #8295ff, #c97cfc);
   height: 2px;
   transform: scaleY(0.5);
   background-image: $gradient-blue-purple-soft;
-}
-
-.login_form {
-  :deep(.button_wrapper) {
-    position: relative;
-    background-image: linear-gradient(to right, #e0d1eb, #e2b8ff); /* ✅ 必需：遮挡内容区 */
-    border-radius: 8px;
-    z-index: 1;
-    cursor: pointer;
-    border: none;
-    margin-top: 1rem;
-    font-weight: 400;
-  }
 }
 
 .active_account {

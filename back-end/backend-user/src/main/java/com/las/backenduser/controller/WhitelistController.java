@@ -5,6 +5,7 @@ import com.las.backenduser.model.dto.whitelist.WhitelistApplicationListVO;
 import com.las.backenduser.model.dto.whitelist.WhitelistApplyDTO;
 import com.las.backenduser.model.dto.whitelist.WhitelistStatusVO;
 import com.las.backenduser.service.WhitelistService;
+import com.las.backenduser.utils.cookie.CookieUtils;
 import com.las.backenduser.utils.jwt.JwtUtils;
 import com.las.backenduser.utils.result.Result;
 import com.las.backenduser.utils.result.ResultEnum;
@@ -79,7 +80,7 @@ public class WhitelistController {
     }
 
     /**
-     * 玩家申请白名单（通过全局 bearerAuth / Authorization Header 中的 Access Token 识别身份）
+     * 玩家申请白名单（通过 HttpOnly Cookie 中的 Access Token 识别身份）
      * POST /whitelist/apply
      * Body: { server }
      */
@@ -87,11 +88,10 @@ public class WhitelistController {
     public Result<Serializable> apply(
             HttpServletRequest request,
             @RequestBody WhitelistApplyDTO dto) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String token = CookieUtils.getCookieValue(request, CookieUtils.AT_COOKIE);
+        if (token == null || token.trim().isEmpty()) {
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "请先登录");
         }
-        String token = authHeader.substring(7);
         try {
             String userUuid = jwtUtils.getUserUUIDFromToken(token);
             return whitelistService.applyWhitelist(userUuid, dto.getServer());

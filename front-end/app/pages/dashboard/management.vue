@@ -457,7 +457,9 @@ function toggleRow(index: number) {
   else {
     expandedRow.value = index
     // 展开时查询该用户的封禁状态
-    fetchBanStatus(users.value[index])
+    const u = users.value[index]
+    if (u)
+      fetchBanStatus(u)
   }
 }
 
@@ -508,7 +510,11 @@ async function handleWhitelistAction(user: UserVO, server: string, action: strin
     })
     // 刷新用户列表 + 封禁状态
     await loadUsers()
-    await fetchBanStatus(users.value[expandedRow.value ?? 0])
+    const index = expandedRow.value
+    const uA1 = index == null ? undefined : users.value[index]
+
+    if (uA1)
+      await fetchBanStatus(uA1)
   }
   catch (e) {
     console.error('whitelist action failed:', e)
@@ -564,6 +570,52 @@ async function copyLink() {
     setTimeout(() => linkCopied.value = false, 2000)
   }
   catch {}
+}
+
+// --- 权限组编辑 ---
+// 当前正在编辑的行索引，null 表示没有编辑中
+const editingPermIndex = ref<number | null>(null)
+// 编辑框中的临时文本（逗号分隔多个权限）
+const editingPermValue = ref('')
+
+function startEditPerm(index: number, user: UserVO) {
+  editingPermIndex.value = index
+  editingPermValue.value = (user.permission || []).join(', ')
+  nextTick(() => {
+    const el = document.getElementById(`perm-input-${index}`)
+    if (el)
+      (el as HTMLInputElement).focus()
+  })
+}
+
+async function saveEditPerm(index: number) {
+  if (editingPermIndex.value !== index)
+    return
+  const user = users.value[index]
+  if (!user)
+    return
+  const newPerm = editingPermValue.value
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+  editingPermIndex.value = null
+  try {
+    await $fetch(`/api/user/${user.uuid}/permission`, {
+      method: 'PUT',
+      body: { permission: newPerm },
+    })
+    // 乐观更新本地数据
+    user.permission = newPerm
+  }
+  catch (e) {
+    console.error('更新权限组失败:', e)
+    // 失败时刷新列表恢复真实数据
+    await loadUsers()
+  }
+}
+
+function cancelEditPerm() {
+  editingPermIndex.value = null
 }
 </script>
 
@@ -626,10 +678,24 @@ async function copyLink() {
                   </span>
                 </span>
                 <span class="col-group">
-                  <span class="group-text">{{ getGroup(user) }}</span>
-                  <svg class="edit-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M13.5 2.25L15.75 4.5L6.75 13.5H4.5V11.25L13.5 2.25Z" fill="#746aeb" />
-                  </svg>
+                  <template v-if="editingPermIndex === index">
+                    <input
+                      :id="`perm-input-${index}`"
+                      v-model="editingPermValue"
+                      class="perm-input"
+                      type="text"
+                      placeholder="权限组，逗号分隔"
+                      @keydown.enter.prevent="saveEditPerm(index)"
+                      @keydown.esc.prevent="cancelEditPerm()"
+                      @blur="saveEditPerm(index)"
+                    >
+                  </template>
+                  <template v-else>
+                    <span class="group-text">{{ getGroup(user) }}</span>
+                    <svg class="edit-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" @click.stop="startEditPerm(index, user)">
+                      <path d="M13.5 2.25L15.75 4.5L6.75 13.5H4.5V11.25L13.5 2.25Z" fill="#746aeb" />
+                    </svg>
+                  </template>
                 </span>
                 <span class="col-date cell-text">{{ formatDate(user.registerDate) }}</span>
                 <span class="col-whitelist whitelist-toggle" @click="toggleRow(index)">
@@ -921,6 +987,11 @@ $accent: #8194f0;
   align-items: flex-start;
   min-height: 100vh;
   padding: 40px 0 120px;
+
+  @media (max-width: 1100px) {
+    padding: 24px 0 60px;
+    width: 100%;
+  }
 }
 
 .page-layout {
@@ -946,8 +1017,13 @@ $accent: #8194f0;
   }
 
   @media (max-width: 1100px) {
-    transform: scale(0.52);
-    margin-bottom: -600px;
+    transform: none;
+    margin-bottom: 0;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+    gap: 24px;
   }
 }
 
@@ -956,6 +1032,11 @@ $accent: #8194f0;
 // ========================
 .left-container {
   flex-shrink: 0;
+
+  @media (max-width: 1100px) {
+    width: 100%;
+    flex-shrink: 1;
+  }
 }
 
 .management-card {
@@ -968,6 +1049,14 @@ $accent: #8194f0;
   background:
     linear-gradient(#fff, #fff) padding-box,
     linear-gradient(180deg, rgba(162, 99, 207, 0) 0%, rgba(116, 106, 235, 0.8) 100%) border-box;
+
+  @media (max-width: 1100px) {
+    width: 100%;
+    height: auto;
+    min-height: 600px;
+    padding-bottom: 80px;
+    box-sizing: border-box;
+  }
 }
 
 .title-bar {
@@ -977,6 +1066,13 @@ $accent: #8194f0;
   gap: 11px;
   left: 47px;
   top: 28px;
+
+  @media (max-width: 1100px) {
+    position: relative;
+    left: auto;
+    top: auto;
+    padding: 20px 20px 0;
+  }
 }
 
 .title-icon {
@@ -1005,6 +1101,14 @@ $accent: #8194f0;
   top: 71px;
   height: 0;
   border: 2px solid $primary;
+
+  @media (max-width: 1100px) {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    margin: 8px 20px 0;
+  }
 }
 
 .sub-header {
@@ -1015,6 +1119,16 @@ $accent: #8194f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+
+  @media (max-width: 1100px) {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    padding: 8px 20px 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 .sub-title {
@@ -1076,6 +1190,11 @@ $accent: #8194f0;
   padding: 0 16px;
   gap: 8px;
 
+  @media (max-width: 1100px) {
+    width: 100%;
+    min-width: 0;
+  }
+
   input {
     border: none;
     outline: none;
@@ -1104,32 +1223,92 @@ $accent: #8194f0;
   top: 146px;
   bottom: 90px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba($primary, 0.35) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($primary, 0.35);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba($primary, 0.6);
+    }
+  }
+
+  @media (max-width: 1100px) {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    margin: 8px 20px 0;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
 }
 
 .col-uuid {
   width: 142px;
   min-width: 77px;
+
+  @media (max-width: 1100px) {
+    width: 90px;
+    min-width: 60px;
+  }
 }
 .col-username {
   width: 139px;
+
+  @media (max-width: 1100px) {
+    width: 90px;
+  }
 }
 .col-account {
   width: 163px;
+
+  @media (max-width: 1100px) {
+    width: 110px;
+  }
 }
 .col-direction {
   width: 114px;
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
 }
 .col-group {
   width: 121px;
   display: flex;
   align-items: center;
   gap: 5px;
+
+  @media (max-width: 1100px) {
+    width: 80px;
+  }
 }
 .col-date {
   width: 151px;
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
 }
 .col-whitelist {
   width: 100px;
+
+  @media (max-width: 1100px) {
+    width: 70px;
+  }
 }
 
 .table-header {
@@ -1144,6 +1323,10 @@ $accent: #8194f0;
     line-height: 24px;
     letter-spacing: 0.05em;
     color: $text-label;
+
+    @media (max-width: 1100px) {
+      font-size: 13px;
+    }
   }
 }
 
@@ -1173,6 +1356,10 @@ $accent: #8194f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  @media (max-width: 1100px) {
+    font-size: 13px;
+  }
 }
 
 .uuid-short {
@@ -1199,6 +1386,10 @@ $accent: #8194f0;
   line-height: 24px;
   letter-spacing: 0.05em;
   color: $primary;
+
+  @media (max-width: 1100px) {
+    font-size: 13px;
+  }
 }
 
 .edit-icon {
@@ -1207,6 +1398,31 @@ $accent: #8194f0;
 
   &:hover {
     opacity: 1;
+  }
+}
+
+.perm-input {
+  width: 100%;
+  max-width: 110px;
+  height: 26px;
+  border: 1px solid $primary;
+  border-radius: 5px;
+  padding: 0 6px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: $text-body;
+  outline: none;
+  background: #fff;
+
+  &:focus {
+    border-color: $primary-dark;
+    box-shadow: 0 0 0 2px rgba($primary, 0.15);
+  }
+
+  @media (max-width: 1100px) {
+    max-width: 76px;
+    font-size: 12px;
   }
 }
 
@@ -1225,6 +1441,10 @@ $accent: #8194f0;
   line-height: 24px;
   letter-spacing: 0.05em;
   color: $primary;
+
+  @media (max-width: 1100px) {
+    font-size: 13px;
+  }
 }
 
 .toggle-arrow {
@@ -1245,6 +1465,10 @@ $accent: #8194f0;
   overflow: hidden;
   max-width: 100%;
   z-index: 5;
+
+  @media (max-width: 1100px) {
+    display: none;
+  }
 }
 
 .uuid-full-text {
@@ -1277,6 +1501,15 @@ $accent: #8194f0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   border-radius: 5px;
   padding: 9px 14px;
+
+  @media (max-width: 1100px) {
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+  }
 }
 
 .wl-header {
@@ -1361,6 +1594,16 @@ $accent: #8194f0;
   display: flex;
   align-items: center;
   gap: 8px;
+
+  @media (max-width: 1100px) {
+    position: relative;
+    left: auto;
+    transform: none;
+    bottom: auto;
+    margin: 16px auto 0;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 
 .page-prev,
@@ -1451,6 +1694,12 @@ $accent: #8194f0;
   gap: 40px;
   width: 576px;
   flex-shrink: 0;
+
+  @media (max-width: 1100px) {
+    width: 100%;
+    flex-shrink: 1;
+    gap: 24px;
+  }
 }
 
 .right-card {
@@ -1463,12 +1712,20 @@ $accent: #8194f0;
   background:
     linear-gradient(#fff, #fff) padding-box,
     linear-gradient(180deg, rgba(162, 99, 207, 0) 0%, rgba(116, 106, 235, 0.8) 100%) border-box;
+
+  @media (max-width: 1100px) {
+    width: 100%;
+  }
 }
 
 // --- 卡片通用头部 ---
 .card-header {
   position: relative;
   padding: 27px 43px 0;
+
+  @media (max-width: 1100px) {
+    padding: 20px 20px 0;
+  }
 }
 
 .card-title-bar {
@@ -1513,6 +1770,10 @@ $accent: #8194f0;
   display: flex;
   align-items: baseline;
   gap: 4px;
+
+  @media (max-width: 1100px) {
+    right: 20px;
+  }
 }
 
 .card-info-label {
@@ -1537,6 +1798,12 @@ $accent: #8194f0;
   align-items: center;
   gap: 15px;
   padding: 19px 42px 0;
+
+  @media (max-width: 1100px) {
+    flex-wrap: wrap;
+    padding: 16px 20px 0;
+    gap: 10px;
+  }
 }
 
 .activate-input {
@@ -1548,6 +1815,11 @@ $accent: #8194f0;
   border: 1px solid $border-light;
   border-radius: 8px;
   padding: 0 16px;
+
+  @media (max-width: 1100px) {
+    width: 100%;
+    flex: 1 1 160px;
+  }
 
   input {
     border: none;
@@ -1630,6 +1902,10 @@ $accent: #8194f0;
   font-size: 14px;
   line-height: 21px;
   color: $tag-red;
+
+  @media (max-width: 1100px) {
+    padding: 8px 20px 0;
+  }
 }
 
 .activate-link-area {
@@ -1637,6 +1913,10 @@ $accent: #8194f0;
   display: flex;
   align-items: flex-end;
   gap: 8px;
+
+  @media (max-width: 1100px) {
+    padding: 11px 20px 0;
+  }
 }
 
 .activate-link {
@@ -1667,12 +1947,38 @@ $accent: #8194f0;
 // --- 卡片 2/3/4: 小表格 ---
 .mini-table {
   padding: 10px 42px 0;
+
+  @media (max-width: 1100px) {
+    padding: 10px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba($primary, 0.35) transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba($primary, 0.35);
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba($primary, 0.6);
+      }
+    }
+  }
 }
 
 .mini-table-header {
   display: flex;
   align-items: center;
   margin-bottom: 6px;
+  min-width: max-content;
 
   span {
     font-family: 'Poppins', sans-serif;
@@ -1681,6 +1987,8 @@ $accent: #8194f0;
     line-height: 24px;
     letter-spacing: 0.05em;
     color: $text-label;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 
@@ -1688,6 +1996,7 @@ $accent: #8194f0;
   display: flex;
   align-items: center;
   height: 30px;
+  min-width: max-content;
 }
 
 .mini-cell {
@@ -1697,6 +2006,8 @@ $accent: #8194f0;
   line-height: 24px;
   letter-spacing: 0.05em;
   color: $text-body;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 // 最近注册列宽
@@ -1708,6 +2019,9 @@ $accent: #8194f0;
 }
 .mini-col-status {
   flex: 1;
+  min-width: 160px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .mini-col-server {
   width: 148px;
@@ -1717,6 +2031,9 @@ $accent: #8194f0;
 }
 .mini-col-action {
   flex: 1;
+  min-width: 80px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .status-text {
@@ -1745,6 +2062,8 @@ $accent: #8194f0;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .action-add {

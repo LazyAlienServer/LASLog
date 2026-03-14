@@ -22,9 +22,11 @@ import java.util.Objects;
 public class LoginController {
 
     private final LoginServiceImpl loginService;
+    private final CookieUtils cookieUtils;
 
-    public LoginController(LoginServiceImpl loginService) {
+    public LoginController(LoginServiceImpl loginService, CookieUtils cookieUtils) {
         this.loginService = loginService;
+        this.cookieUtils = cookieUtils;
     }
 
     @PostMapping("/login")
@@ -41,12 +43,13 @@ public class LoginController {
             JSONObject tokens = JSON.parseObject(serviceResult.getData());
             String at = tokens.getString("AT");
             String rt = tokens.getString("RT");
-            // RT 存入 HttpOnly Cookie，AT 通过响应体返回给前端
-            CookieUtils.setRefreshTokenCookie(response, rt);
-            return ResultUtil.result(serviceResult.getCode(), at, serviceResult.getMsg());
+            // AT 和 RT 均存入 HttpOnly Cookie
+            cookieUtils.setAccessTokenCookie(response, at);
+            cookieUtils.setRefreshTokenCookie(response, rt);
+            return ResultUtil.result(serviceResult.getCode(), serviceResult.getMsg());
         }
 
-        return ResultUtil.result(serviceResult.getCode(), (Serializable) null, serviceResult.getMsg());
+        return ResultUtil.result(serviceResult.getCode(), serviceResult.getMsg());
     }
 
     @PostMapping("/kickByUuid")
@@ -61,32 +64,31 @@ public class LoginController {
 
     @PostMapping("/logout")
     public Result<Serializable> logout(
-            @RequestHeader("Authorization") String authHeader,
+            HttpServletRequest request,
             HttpServletResponse response,
             @RequestParam String clientId) {
 
-        String accessToken = authHeader != null && authHeader.startsWith("Bearer ")
-                ? authHeader.substring(7)
-                : authHeader;
+        String accessToken = CookieUtils.getCookieValue(request, CookieUtils.AT_COOKIE);
 
         if (accessToken == null || accessToken.trim().isEmpty()) {
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "未登录，无需登出");
         }
 
         Result<Serializable> result = loginService.logoutByToken(accessToken, clientId);
-        // 无论结果如何都清除 RT Cookie
-        CookieUtils.clearRefreshTokenCookie(response);
+        // 无论结果如何都清除所有 Token Cookie
+        cookieUtils.clearAllTokenCookies(response);
         return result;
     }
 
-    @GetMapping("/loginByToken")
-    public Result<Serializable> loginByToken(
-            @RequestHeader("Authorization") String authHeader,
+    /**
+     * 校验当前 AT Cookie 是否有效（前端路由守卫 / 页面刷新时调用）
+     */
+    @GetMapping("/checkAuth")
+    public Result<Serializable> checkAuth(
+            HttpServletRequest request,
             @RequestParam String clientId) {
 
-        String accessToken = authHeader != null && authHeader.startsWith("Bearer ")
-                ? authHeader.substring(7)
-                : authHeader;
+        String accessToken = CookieUtils.getCookieValue(request, CookieUtils.AT_COOKIE);
 
         if (accessToken == null || accessToken.trim().isEmpty()) {
             return ResultUtil.result(ResultEnum.UNAUTHORIZED.getCode(), "未提供 AccessToken");
@@ -98,6 +100,7 @@ public class LoginController {
     @PostMapping("/refreshToken")
     public Result<Serializable> refreshToken(
             HttpServletRequest request,
+            HttpServletResponse response,
             @RequestParam String clientId) {
 
         String refreshToken = CookieUtils.getCookieValue(request, CookieUtils.RT_COOKIE);
@@ -109,7 +112,10 @@ public class LoginController {
         Result<Serializable> result = loginService.refreshToken(refreshToken, clientId);
 
         if (Objects.equals(result.getCode(), ResultEnum.SUCCESS.getCode()) && result.getData() != null) {
-            return ResultUtil.result(result.getCode(), result.getData().toString(), result.getMsg());
+            // 刷新成功，将新 AT 写入 Cookie
+            String newAt = result.getData().toString();
+            cookieUtils.setAccessTokenCookie(response, newAt);
+            return ResultUtil.result(result.getCode(), result.getMsg());
         }
 
         return result;
