@@ -6,7 +6,7 @@ spring:
   application:
     name: backend-user
   datasource:
-    url: jdbc:postgresql://${DB_HOST:lasteamcity.ddns.net}:${DB_PORT:5432}/${DB_NAME:postgres}
+    url: jdbc:postgresql://${DB_HOST:lasteamcity.ddns.net}:${DB_PORT:5432}/${DB_NAME:postgres}?sslmode=disable
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:Gp9#q2Wz!mR6*xK4}
     driver-class-name: org.postgresql.Driver
@@ -15,12 +15,13 @@ spring:
       minimum-idle: 5
   jpa:
     hibernate:
-      # 开发环境可以用 update，生产环境强烈建议用 validate 并配合 Flyway/Liquibase
-      ddl-auto: update
+      # update 会在启动时联网检测 schema，生产/远程环境建议 validate 或 none
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   data:
     mongodb:
       auto-index-creation: true
@@ -55,4 +56,9 @@ secret:
 
 
     key: 'c(<sJM3RMjpv-RV?6Z&TV]a7SRMe3AKC>ajZTT,WTUyPWJ@+vfYn"Af85-4j!Fa2HV&CSxxR+MX|B@vyAfCJ|2uce.R+s)?2cGA<C&7Q;N]%t<(RS!A:%V2v[G:"W)U-8[k-Wa|s"Uxf,*SfbUQ#NFvY%?Wd5:|man!3U>h2bKXr7>?kT%h?S6D(*]MaPvZ.m]TERR#@6#rp,U@m:2:cHWkxt&rBAHvtE>=Ket&f55Cs(RWTY-_"+A;*[Ge*xYx?'
+
+app:
+  cookie:
+    # 开发环境 HTTP 下必须设为 false，生产 HTTPS 设为 true
+    secure: false
 

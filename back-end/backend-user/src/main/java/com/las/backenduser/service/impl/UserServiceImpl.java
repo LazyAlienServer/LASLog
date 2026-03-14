@@ -1,6 +1,7 @@
 package com.las.backenduser.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.las.backenduser.mapper.UserMapper;
 import com.las.backenduser.model.User;
@@ -52,6 +53,15 @@ public class UserServiceImpl implements UserService {
         pageVO.setPages(result.getPages());
 
         return pageVO;
+    }
+
+    @Override
+    public void updatePermission(String uuid, List<String> permission) {
+        UpdateWrapper<User> wrapper = new UpdateWrapper<>();
+        wrapper.eq("uuid", uuid);
+        User user = new User();
+        user.setPermission(permission);
+        userMapper.update(user, wrapper);
     }
 
     /**

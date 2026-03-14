@@ -2,6 +2,8 @@ package com.las.backenduser.service;
 
 import com.las.backenduser.model.dto.user.UserPageVO;
 
+import java.util.List;
+
 /**
  * 用户管理业务接口
  */
@@ -16,5 +18,13 @@ public interface UserService {
      * @return 分页用户数据
      */
     UserPageVO getAllUsers(int page, int size, String search);
+
+    /**
+     * 更新用户权限组
+     *
+     * @param uuid       用户 UUID
+     * @param permission 新的权限列表
+     */
+    void updatePermission(String uuid, List<String> permission);
 }
 

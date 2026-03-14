@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.las.backenduser.controller.LoginController;
 import com.las.backenduser.model.dto.login.LoginRequestDTO;
 import com.las.backenduser.service.impl.LoginServiceImpl;
+import com.las.backenduser.utils.cookie.CookieUtils;
 import com.las.backenduser.utils.result.Result;
 import com.las.backenduser.utils.result.ResultEnum;
 import com.las.backenduser.utils.result.ResultUtil;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.Serializable;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +38,9 @@ class LoginControllerTest {
 
     @MockitoBean
     private LoginServiceImpl loginService;
+
+    @MockitoBean
+    private CookieUtils cookieUtils;
 
     @MockitoBean
     private com.las.backenduser.websocket.WsClientService wsClientService;
@@ -74,26 +81,27 @@ class LoginControllerTest {
     }
 
     @Test
-    @DisplayName("GET /login/loginByToken - 缺少Token被拦截")
-    void testLoginByToken_MissingToken() throws Exception {
-        mockMvc.perform(get("/login/loginByToken")
-                        .header("Authorization", "")
+    @DisplayName("GET /login/checkAuth - 缺少AT Cookie被拦截")
+    void testCheckAuth_MissingCookie() throws Exception {
+        when(CookieUtils.getCookieValue(any(), eq(CookieUtils.AT_COOKIE))).thenReturn(null);
+
+        mockMvc.perform(get("/login/checkAuth")
                         .param("clientId", "pc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(401)) // Unauthorized
+                .andExpect(jsonPath("$.code").value(401))
                 .andExpect(jsonPath("$.msg").value("未提供 AccessToken"));
     }
 
     @Test
-    @DisplayName("GET /login/loginByToken - 携带Bearer前缀正常截取")
-    void testLoginByToken_WithBearer() throws Exception {
-        Result<java.io.Serializable> mockResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "登录成功");
-        // 注意：这里验证的是截取掉 Bearer 之后的行为
+    @DisplayName("GET /login/checkAuth - 携带AT Cookie正常校验")
+    void testCheckAuth_WithCookie() throws Exception {
+        Result<Serializable> mockResult = ResultUtil.result(ResultEnum.SUCCESS.getCode(), "登录成功");
+        when(CookieUtils.getCookieValue(any(), eq(CookieUtils.AT_COOKIE))).thenReturn("valid_token");
         when(loginService.loginByToken("valid_token", "pc")).thenReturn(mockResult);
 
-        mockMvc.perform(get("/login/loginByToken")
-                        .header("Authorization", "Bearer valid_token")
-                        .param("clientId", "pc"))
+        mockMvc.perform(get("/login/checkAuth")
+                        .param("clientId", "pc")
+                        .cookie(new Cookie(CookieUtils.AT_COOKIE, "valid_token")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

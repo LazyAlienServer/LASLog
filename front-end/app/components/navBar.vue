@@ -95,7 +95,7 @@ onMounted(() => {
   background: #fafafc;
   border: 1px solid #746aeb;
   border-radius: 23px;
-  box-shadow: 0px 0px 50px 2px #00000033;
+  box-shadow: 0 0 50px 2px #00000033;
   align-content: center;
   justify-items: center;
   z-index: 999999;
