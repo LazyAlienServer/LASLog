@@ -5,62 +5,108 @@ import { useTokenStore } from '~/stores/tokenStore'
 
 const username = ref('')
 const password = ref('')
+const toast = useToast()
 
 async function generateFingerprint() {
   try {
     const fp = await FingerprintJS.load()
     const result = await fp.get()
-    useTokenStore().setBrowserFinger(result.visitorId)
+    useTokenStore().setClientId(result.visitorId)
   }
   catch (error) {
     console.error('Fingerprint error:', error)
-    useTokenStore().setBrowserFinger(useRandomKey())
+    useTokenStore().setClientId(useRandomKey())
   }
 }
 
+function addToast(code: number, message: string) {
+  toast.add({
+    title: code === 200 ? '成功' : '警告',
+    description: message,
+    color: code === 200 ? 'success' : 'warning',
+  })
+}
+
 async function login() {
-  const { code, data } = await $fetch<{ code: number, data: string }>('/api/login/login', {
+  const { code, data, msg } = await $fetch<{ code: number, data: string, msg: string }>('/api/login/login', {
     method: 'post',
     body: {
       username: username.value,
       password: password.value,
-      browserFinger: useTokenStore().browserFinger,
+      clientId: useTokenStore().clientId,
     },
   })
   switch (code) {
     case 200:
       useTokenStore().setAccessToken(data)
+      addToast(code, msg)
       useRouter().push('dashboard/home')
       break
     case 401:
       useTokenStore().setAccessToken('')
+      addToast(code, msg)
       break
     default:
+      addToast(code, msg)
       useTokenStore().setAccessToken('')
   }
 }
-
+async function refreshToken() {
+  const { code, data, msg } = await $fetch<{ code: number, data: string, msg: string }>('/api/login/refreshToken', {
+    method: 'post',
+    query: {
+      clientId: useTokenStore().clientId,
+    },
+  })
+  switch (code) {
+    case 200:
+      useTokenStore().setAccessToken(data)
+      break
+    case 401:
+      addToast(code, msg)
+      useTokenStore().setAccessToken('')
+      break
+    default:
+      addToast(code, msg)
+      useTokenStore().setAccessToken('')
+  }
+}
 async function loginByToken() {
   if (!useTokenStore().accessToken)
     return
   const { code, msg } = await $fetch<{ code: number, msg: string }>('/api/login/loginByToken', {
     headers: {
-      Authorization: useTokenStore().accessToken,
+      Authorization: `Bearer ${useTokenStore().accessToken}`,
     },
     query: {
-      clientId: useTokenStore().browserFinger,
+      clientId: useTokenStore().clientId,
     },
   })
-  // console.log('loginByToken br: ', useTokenStore().browserFinger)
-  // console.log('loginByToken at: ', useTokenStore().accessToken)
-  // console.log('loginByToken:', code, msg)
+  switch (code) {
+    case 200:
+      useRouter().push('dashboard/home')
+      break
+    case 401:
+      addToast(code, msg)
+      useTokenStore().setAccessToken('')
+      break
+    default:
+      addToast(code, msg)
+      useTokenStore().setAccessToken('')
+  }
+  return { code, msg }
 }
 
 onMounted(() => {
   // 尝试从localStorage获取已生成的指纹
-  if (!useTokenStore().browserFinger)
+  if (!useTokenStore().clientId)
     generateFingerprint()
-  loginByToken()
+  loginByToken().then(async (res) => {
+    if (res?.code === 200)
+      return
+    await refreshToken()
+    await loginByToken()
+  })
 })
 
 definePageMeta({
