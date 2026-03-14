@@ -7,6 +7,19 @@ import LoginPage from '../../app/pages/login.vue'
 // ─── Mocks ───
 vi.stubGlobal('definePageMeta', vi.fn())
 
+vi.mock('~/plugins/api', async () => {
+  const { ref } = await import('vue')
+  return {
+    loggedIn: ref(false)
+  }
+})
+
+vi.mock('~/stores/fingerprint', () => ({
+  useFingerprintStore: vi.fn(() => ({
+    getClientId: vi.fn(() => 'mock-client-id')
+  }))
+}))
+
 const UInputStub = defineComponent({
   name: 'UInput',
   props: ['modelValue', 'type', 'icon', 'placeholder', 'autofocus', 'ui'],

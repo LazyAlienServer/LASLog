@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { loggedIn } from '~/plugins/api'
 import { useFingerprintStore } from '~/stores/fingerprint'
 
